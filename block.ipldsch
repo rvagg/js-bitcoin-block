@@ -1,0 +1,81 @@
+# Bitcoin block structure as IPLD Schema
+#
+# This schema is for illustrative purposes only, Bitcoin encodes using its own
+# fixed-format encoding rather than an IPLD DAG format, for which IPLD Schemas
+# are intended to describe.
+#
+
+# Header is the first 80 bytes of each Bitcoin block
+type Header struct {
+  version Int
+  prevBlock &Header # 256-bit hash, convertible to a CID
+  txMerkleRoot &TransactionMerkle
+  time Int
+  bits Int
+  nonce Int
+}
+
+# TransactionMerkle will either point to other merkle tree nodes, or to
+# transactions themselves.
+type TransactionMerkle struct {
+  leftNode &MaybeTransaction
+  rightNode &MaybeTransaction
+}
+
+# A faux kinded union, this is not how it works in practice, differentiation
+# would occur by checking the length of the bytes, 64-bytes is a
+# TransactionMerkle, while > 64-bytes is a Transaction
+type MaybeTransaction union {
+  | TransactionMerkle bytes
+  | Transaction map
+} representation kinded
+
+# For SegWit blocks, each transaction will be represented twice as a
+# Transaction. The first is from the non-witness version linked via
+# txMerkleRoot, none of these instances will contain scriptWitness and the
+# segWit field will be implicitly false (it won't be present). The second
+# instance will be found by following the txWitnessMerkleRoot from one of the
+# TxOuts of the coinbase (first) transaction. The Transactions at the bottom of
+# that merkle tree may have scriptWitness data attached.
+type Transaction struct {
+  version Int
+  segWit optional Bool (implicit "false")
+  vin [TxIn]
+  vout [TxOut]
+  scriptWitness optional [Witness] # same number of elements as `vin`
+  lockTime Int
+}
+
+type TxIn struct {
+  prevOut OutPoint
+  scriptSig String # unbounded vec<char>
+  sequence Int
+}
+
+type OutPoint struct {
+  hash Bytes # 256-bits
+  n Int
+}
+
+type TxOut struct {
+  value Int # int64
+  scriptPubKey MaybePubKey # unbounded vec<char>
+}
+
+# A faux kinded union, this field is only a WitnessTransactionMerkle hash for
+# SegWit transactions with one of the coinbase TxOuts where the field starts
+# with the bytes [0xaa, 0x21, 0xa9, 0xed], the remainder is taken to be the
+# txWitnessMerkleRoot. Otherwise the field can be interpreted as a scriptPubKey
+type MaybePubKey union {
+  | ScriptPubKey string
+  | &WitnessTransactionMerkle link
+} representation kinded
+
+type ScriptPubKey string
+
+type WitnessTransactionMerkle struct {
+  nonce Bytes # 256-bits, attached to the coinbase TxIn as its scriptWitness
+  txWitnessMerkleRoot &TransactionMerkle
+}
+
+type Witness bytes # unbounced vec<bytes>
