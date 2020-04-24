@@ -1,6 +1,6 @@
 const multibase = require('multibase')
 const bech32 = require('bech32')
-const { dblSha2256 } = require('./class-utils')
+const { dblSha2256, hash160 } = require('./class-utils')
 
 const MAX_SCRIPT_SIZE = 10000
 const BECH32_HRP = 'bc'
@@ -491,7 +491,7 @@ function matchMultisig (buf) {
 
   let offset = 0
   let opcode = getScriptOp(buf, offset)
-  if (!opcode || isSmallInteger(opcode.opcode)) {
+  if (!opcode || !isSmallInteger(opcode.opcode)) {
     return null
   }
 
@@ -509,7 +509,7 @@ function matchMultisig (buf) {
     }
     pubkeys.push(opcode.data)
   }
-  if (!opcode || isSmallInteger(opcode.opcode)) {
+  if (!opcode || !isSmallInteger(opcode.opcode)) {
     return null
   }
   const keys = decodeOPN(opcode.opcode)
@@ -582,8 +582,13 @@ function solver (buf) {
 
   const multisig = matchMultisig(buf)
   if (multisig) {
+    const solutions = [Buffer.from([multisig.required])]
+    for (const sol of multisig.pubkeys) {
+      solutions.push(sol)
+    }
+    solutions.push(Buffer.from([multisig.pubkeys.length]))
     return {
-      solutions: Buffer.concat([Buffer.from([multisig.required]), ...multisig.pubkeys, Buffer.from([multisig.pubkeys.length])]),
+      solutions,
       type: types.TX_MULTISIG
     }
   }
@@ -628,7 +633,6 @@ function extractDestinations (buf) {
   let required
   const addresses = []
   const solution = solver(buf) // TODO: make this an optional param
-
   if (solution.type === types.TX_NONSTANDARD) {
     return null
   } else if (solution.type === types.TX_NULL_DATA) {
@@ -639,8 +643,7 @@ function extractDestinations (buf) {
   if (solution.type === types.TX_MULTISIG) {
     required = solution.solutions[0][0]
     for (let i = 1; i < solution.solutions.length - 1; i++) {
-      // if (!pubKeyGetLen(solution.solutions[i])) { // roughly PubKey#IsValid()
-      if (pubKeyValidSize(solution.solutions[i])) {
+      if (!pubKeyValidSize(solution.solutions[i])) {
         continue
       }
       addresses.push(solution.solutions[i])
@@ -663,9 +666,13 @@ function extractDestinations (buf) {
   }
 }
 
+// DestinationEncoder
 function encodeAddress (buf, type) {
-  if (type === types.TX_PUBKEY || type === types.TX_PUBKEYHASH || type === types.TX_SCRIPTHASH) {
-    if (type === types.TX_PUBKEY || type === types.TX_PUBKEYHASH) {
+  if (type === types.TX_PUBKEY || type === types.TX_PUBKEYHASH || type === types.TX_SCRIPTHASH || type === types.TX_MULTISIG) {
+    if (type === types.TX_PUBKEY || type === types.TX_PUBKEYHASH || type === types.TX_MULTISIG) {
+      if (type === types.TX_MULTISIG) {
+        buf = hash160(buf) // pubkey to a pkhash
+      }
       buf = Buffer.concat([Buffer.from([0]), buf]) // PUBKEY_ADDRESS base58Prefix
     } else {
       buf = Buffer.concat([Buffer.from([5]), buf]) // TX_SCRIPTHASH base58Prefix

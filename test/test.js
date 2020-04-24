@@ -37,7 +37,9 @@ function verifyHeader (block, expectedComplete) {
 
   // just the pieces we expect from a header
   const expected = 'hash version versionHex merkleroot time nonce bits previousblockhash difficulty'.split(' ').reduce((p, c) => {
-    p[c] = expectedComplete[c]
+    if (expectedComplete[c] !== undefined) {
+      p[c] = expectedComplete[c]
+    }
     return p
   }, {})
   assert.deepEqual(roundDifficulty(decodedHeader.toSerializable()), roundDifficulty(expected), 'decoded header data')

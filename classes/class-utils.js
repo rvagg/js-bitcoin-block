@@ -1,4 +1,5 @@
 const multihashing = require('multihashing')
+const RIPEMD160 = require('ripemd160')
 
 const COIN = 100000000
 const WITNESS_SCALE_FACTOR = 4
@@ -30,6 +31,14 @@ function dblSha2256 (bytes) {
   return digest
 }
 
+function ripemd160 (bytes) {
+  return new RIPEMD160().update(bytes).digest()
+}
+
+function hash160 (bytes) { // bitcoin ripemd-160(sha2-256(bytes))
+  return ripemd160(multihashing.digest(bytes, 'sha2-256'))
+}
+
 function merkleRoot (hashes) {
   hashes = hashes.slice()
 
@@ -50,6 +59,8 @@ function merkleRoot (hashes) {
 module.exports.decodeProperties = decodeProperties
 module.exports.toHashHex = toHashHex
 module.exports.dblSha2256 = dblSha2256
+module.exports.ripemd160 = ripemd160
+module.exports.hash160 = hash160
 module.exports.merkleRoot = merkleRoot
 module.exports.COIN = COIN
 module.exports.WITNESS_SCALE_FACTOR = WITNESS_SCALE_FACTOR

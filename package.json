@@ -6,7 +6,8 @@
   "dependencies": {
     "bech32": "^1.1.4",
     "multibase": "^0.7.0",
-    "multihashing": "^0.3.3"
+    "multihashing": "^0.3.3",
+    "ripemd160": "^2.0.2"
   },
   "devDependencies": {
     "assert-diff": "^3.0.1",
