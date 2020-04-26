@@ -44,5 +44,9 @@ BitcoinOutPoint._decodePropertiesDescriptor = decodeProperties(`
 uint256 hash;
 uint32_t n;
 `)
+BitcoinOutPoint._encodePropertiesDescriptor = decodeProperties(`
+uint256 hash;
+uint32_t n;
+`)
 
 module.exports = BitcoinOutPoint

@@ -35,72 +35,114 @@ function compactSizeSize (size) {
 }
 
 const encoders = {
-  int32_t: function writeUInt32LE (v, name) {
+  int32_t: function * writeUInt32LE (v) {
     if (typeof v !== 'number') {
-      throw new Error(`Encoding int32 (${name}) requires a "number" type`)
+      throw new Error('Encoding int32 requires a "number" type')
     }
 
     const b = Buffer.alloc(4)
     b.writeInt32LE(v)
-    return b
+    yield b
   },
 
-  uint32_t: function writeUInt32LE (v, name) {
+  uint32_t: function * writeUInt32LE (v) {
     if (typeof v !== 'number') {
-      throw new Error(`Encoding uint32 (${name}) requires a "number" type`)
+      throw new Error('Encoding uint32 requires a "number" type')
     }
 
     const b = Buffer.alloc(4)
     b.writeUInt32LE(v)
-    return b
+    yield b
   },
 
-  uint256: function writeHash (v, name) {
+  uint256: function * writeHash (v) {
     if (!Buffer.isBuffer(v)) {
-      throw new Error(`Encoding uint256 (${name}) requires a "Buffer" type`)
+      throw new Error('Encoding uint256 requires a "Buffer" type')
     }
     if (v.length !== 32) {
-      throw new Error(`Encoding uint256 (${name}) requires 32-byte Buffer`)
+      throw new Error('Encoding uint256 requires 32-byte Buffer')
     }
 
-    return v
+    yield v
+  },
+
+  compactSlice: function * writeCompactSlice (v) {
+    if (!Buffer.isBuffer(v)) {
+      throw new Error('Encoding compact slice requires a "Buffer" type')
+    }
+    yield writeCompactSize(v.length)
+    yield v
+  },
+
+  int64_t: function * writeBigInt64LE (v) {
+    const buf = Buffer.alloc(8)
+    let lo = v & 0xffffffff
+    buf[0] = lo
+    lo = lo >> 8
+    buf[1] = lo
+    lo = lo >> 8
+    buf[2] = lo
+    lo = lo >> 8
+    buf[3] = lo
+    let hi = (v / (2 ** 32)) & 0xffffffff
+    buf[4] = hi
+    hi = hi >> 8
+    buf[5] = hi
+    hi = hi >> 8
+    buf[6] = hi
+    hi = hi >> 8
+    buf[7] = hi
+    yield buf
   }
 }
 
-function * encodeType (block) {
-  const constructor = Object.getPrototypeOf(block).constructor
-  // const typ = constructor._nativeName
-  const properties = constructor._encodePropertiesDescriptor
-
-  if (!Array.isArray(properties)) {
-    throw new Error(`Type does not have encoding instructions attached: ${constructor.name}`)
+function * encoder (typ, value, args) {
+  // aliases
+  if (typ === 'std::vector<unsigned char>' || typ === 'CScript') {
+    // different forms of byte slices
+    typ = 'compactSlice'
+  } else if (typ === 'CAmount') {
+    typ = 'int64_t'
   }
 
-  function encode (typ, value) {
-    const encoder = encoders[typ]
-    if (!encoder) {
-      throw new TypeError(`Don't know how to encode type: ${typ}`)
-    }
+  const vectorType = isVectorType(typ)
 
-    return encoder(value)
+  if (vectorType) {
+    const arr = value
+    if (!Array.isArray(arr)) {
+      throw new Error(`Encoding std::vector (${typ}) requires an array`)
+    }
+    yield writeCompactSize(arr.length)
+    for (const v of arr) {
+      yield * encoder(vectorType, v, args)
+    }
+  } else if (encoders[typ]) {
+    yield * encoders[typ](value)
+  } else if (classRegistry[typ]) {
+    yield * encodeType(value, args)
+  } else {
+    throw new TypeError(`Don't know how to encode type: ${typ}`)
+  }
+}
+
+function * encodeType (obj, args) {
+  const clazz = Object.getPrototypeOf(obj).constructor
+  const properties = clazz._encodePropertiesDescriptor
+
+  if (!Array.isArray(properties)) {
+    throw new Error(`Type does not have encoding instructions attached: ${clazz.name}`)
   }
 
   for (const prop of properties) {
     const typ = prop.type
-    const vectorType = isVectorType(typ)
 
-    if (vectorType) {
-      const arr = block[prop.name]
-      if (!Array.isArray(arr)) {
-        throw new Error(`Encoding std::vector (${prop.name}) requires an array`)
-      }
-      yield writeCompactSize(arr.length)
-      for (const v of arr) {
-        yield encode(vectorType, v)
-      }
-    } else {
-      yield encode(typ, block[prop.name])
+    if (typ.startsWith('_customEncode') && typeof clazz[typ] === 'function') {
+      yield * clazz[typ](obj, encoder, args)
+      continue
     }
+
+    const value = obj[prop.name]
+    yield * encoder(typ, value, prop.name, args)
   }
 }
 
@@ -234,8 +276,6 @@ function decodeType (buf, type) {
     },
 
     readType (type) {
-      // console.log('readType', type, pos)
-
       // a class we know
       if (classRegistry[type]) {
         return decoder.readClass(classRegistry[type])
@@ -291,8 +331,7 @@ function decodeType (buf, type) {
       if (type === 'std::vector<unsigned char>' || type === 'CScript') {
         // different forms of byte slices
         type = 'compactSlice'
-      }
-      if (type === 'CAmount') {
+      } else if (type === 'CAmount') {
         type = 'int64_t'
       }
 
@@ -368,7 +407,8 @@ function setup (classes) {
 
   return {
     decodeType,
-    encodeType
+    encodeType,
+    encoder
   }
 }
 

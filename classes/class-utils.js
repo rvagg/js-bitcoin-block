@@ -3,6 +3,7 @@ const RIPEMD160 = require('ripemd160')
 
 const COIN = 100000000
 const WITNESS_SCALE_FACTOR = 4
+const HASH_NO_WITNESS = Symbol.for('hash-no-witness')
 
 function decodeProperties (propertiesDescriptor) {
   return propertiesDescriptor
@@ -64,3 +65,4 @@ module.exports.hash160 = hash160
 module.exports.merkleRoot = merkleRoot
 module.exports.COIN = COIN
 module.exports.WITNESS_SCALE_FACTOR = WITNESS_SCALE_FACTOR
+module.exports.HASH_NO_WITNESS = HASH_NO_WITNESS

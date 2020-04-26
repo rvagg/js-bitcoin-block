@@ -1,4 +1,11 @@
-const { decodeProperties, toHashHex, WITNESS_SCALE_FACTOR, COIN, dblSha2256 } = require('./class-utils')
+const {
+  decodeProperties,
+  toHashHex,
+  WITNESS_SCALE_FACTOR,
+  COIN,
+  HASH_NO_WITNESS,
+  dblSha2256
+} = require('./class-utils')
 const NULL_HASH = Buffer.alloc(32)
 
 /**
@@ -73,7 +80,7 @@ class BitcoinTransaction {
   * Convert to a serializable form that has nice stringified hashes and other simplified forms. May be
   * useful for simplified inspection.
   */
-  toSerializable () {
+  toPorcelain () {
     return this.toJSON()
   }
 
@@ -104,6 +111,8 @@ class BitcoinTransaction {
   }
 }
 
+BitcoinTransaction.HASH_NO_WITNESS = HASH_NO_WITNESS
+
 // -------------------------------------------------------------------------------------------------------
 // Custom decoder descriptors and functions below here, used by ../decoder.js
 // https://github.com/bitcoin/bitcoin/blob/41fa2926d86a57c9623d34debef20746ee2f454a/src/primitives/transaction.h#L181-L197
@@ -123,8 +132,10 @@ _customDecodeSize
 `)
 BitcoinTransaction._encodePropertiesDescriptor = decodeProperties(`
 const uint32_t version
+_customEncodeSegWit
 const std::vector<CTxIn> vin;
 const std::vector<CTxOut> vout;
+_customEncodeWitness
 const uint32_t lockTime
 `)
 
@@ -143,6 +154,12 @@ BitcoinTransaction._customDecodeSegWit = function (decoder, properties, state) {
   }
 }
 
+BitcoinTransaction._customEncodeSegWit = function * (transaction, encoder, args) {
+  if ((!args || args[0] !== HASH_NO_WITNESS) && transaction.segWit) {
+    yield Buffer.from([0x00, 0x01])
+  }
+}
+
 BitcoinTransaction._customDecodeWitness = function (decoder, properties, state) {
   if (state.segWit) {
     state.witnessStart = decoder.currentPosition()
@@ -153,6 +170,14 @@ BitcoinTransaction._customDecodeWitness = function (decoder, properties, state) 
       vin.scriptWitness = wit
     }
     state.witnessEnd = decoder.currentPosition()
+  }
+}
+
+BitcoinTransaction._customEncodeWitness = function * (transaction, encoder, args) {
+  if (args[0] !== HASH_NO_WITNESS && transaction.segWit) {
+    for (const vin of transaction.vin) {
+      yield * encoder('std::vector<std::vector<unsigned char>>', vin.scriptWitness, args)
+    }
   }
 }
 

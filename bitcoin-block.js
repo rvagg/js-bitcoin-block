@@ -1,4 +1,5 @@
 const BitcoinBlock = require('./classes/Block')
+const BitcoinTransaction = require('./classes/Transaction')
 const coding = require('./coding')(require('./classes/'))
 
 /**
@@ -28,12 +29,18 @@ function decodeBlockHeaderOnly (buf) {
 BitcoinBlock.decode = decodeBlock
 BitcoinBlock.decodeHeaderOnly = decodeBlockHeaderOnly
 
-BitcoinBlock.prototype.encode = function () {
-  return Buffer.concat([...coding.encodeType(this)])
+BitcoinBlock.prototype.encode = function (...args) {
+  return Buffer.concat([...coding.encodeType(this, args)])
 }
 
-BitcoinBlock.BitcoinBlockHeaderOnly.prototype.encode = function () {
-  return Buffer.concat([...coding.encodeType(this)])
+BitcoinBlock.BitcoinBlockHeaderOnly.prototype.encode = function (...args) {
+  return Buffer.concat([...coding.encodeType(this, args)])
 }
 
-module.exports = BitcoinBlock
+BitcoinTransaction.prototype.encode = function (...args) {
+  return Buffer.concat([...coding.encodeType(this, args)])
+}
+
+module.exports.BitcoinBlock = BitcoinBlock
+module.exports.BitcoinBlockHeaderOnly = BitcoinBlock.BitcoinBlockHeaderOnly
+module.exports.BitcoinTransaction = BitcoinTransaction

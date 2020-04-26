@@ -1,4 +1,11 @@
-const { decodeProperties, toHashHex, WITNESS_SCALE_FACTOR, dblSha2256, merkleRoot } = require('./class-utils')
+const {
+  decodeProperties,
+  toHashHex,
+  WITNESS_SCALE_FACTOR,
+  HASH_NO_WITNESS,
+  dblSha2256,
+  merkleRoot
+} = require('./class-utils')
 const { compactSizeSize } = require('../coding')
 
 /**
@@ -103,7 +110,11 @@ class BitcoinBlock {
     obj.size = this.size
     obj.strippedsize = this.strippedSize
     obj.weight = this.weight
-    obj.tx = this.tx.map((tx) => toHashHex(tx.txid))
+    if (type === 'min') {
+      obj.tx = this.tx.map((tx) => toHashHex(tx.txid))
+    } else {
+      obj.tx = this.tx.map((tx) => tx.toJSON())
+    }
     obj.nTx = this.tx.length
 
     return obj
@@ -113,26 +124,58 @@ class BitcoinBlock {
    * Convert to a serializable form that has nice stringified hashes and other simplified forms. May be
    * useful for simplified inspection.
    */
-  toSerializable (type) {
+  toPorcelain (type) {
     return this.toJSON(null, type)
   }
 
-  calculateMerkleRoot () {
-    const hashes = [Buffer.alloc(32)] // coinbase transaction is 0x000...
-    for (let i = 1; i < this.tx.length; i++) {
-      hashes.push(this.tx[i].hash)
+  calculateMerkleRoot (noWitness) {
+    if (!this.tx || !this.tx.length) {
+      throw new Error('Cannot calculate merkle root without transactions')
+    }
+    noWitness = noWitness === HASH_NO_WITNESS
+    const hashes = noWitness ? [] : [Buffer.alloc(32)] // coinbase transaction is 0x000... for fill merkle
+    for (let i = noWitness ? 0 : 1; i < this.tx.length; i++) {
+      hashes.push(this.tx[i][noWitness ? 'txid' : 'hash'])
     }
     return merkleRoot(hashes)
   }
 
-  calculateMerkleRootNoWitness () {
-    const hashes = []
-    for (const tx of this.tx) {
-      hashes.push(tx.txid)
+  calculateWitnessCommitment () {
+    if (!this.tx || !this.tx.length) {
+      throw new Error('Cannot calculate witness commitment without transactions')
     }
-    return merkleRoot(hashes)
+    if (!this.isSegWit()) {
+      throw new Error('Cannot calculate witness commitment of non-segwit block')
+    }
+
+    // nonce from coinbase vin scriptWitness
+    const nonce = this.tx[0].vin[0].scriptWitness[0]
+    // full merkle root _with_ witness data but excluding coinbase
+    const fullMerkleRoot = this.calculateMerkleRoot()
+    const witnessCommitment = dblSha2256(Buffer.concat([fullMerkleRoot, nonce]))
+
+    return witnessCommitment
+  }
+
+  isSegWit () {
+    if (!this.tx || !this.tx.length) {
+      throw new Error('Cannot determine if segwit without transactions')
+    }
+    if (this._segWit !== undefined) {
+      return this._segWit
+    }
+    for (const tx of this.tx) {
+      if (tx.segWit) {
+        this._segWit = true
+        return true
+      }
+    }
+    this._segWit = false
+    return false
   }
 }
+
+BitcoinBlock.HASH_NO_WITNESS = HASH_NO_WITNESS
 
 // -------------------------------------------------------------------------------------------------------
 // Custom decoder descriptors and functions below here, used by ../decoder.js

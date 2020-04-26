@@ -1,8 +1,8 @@
 // const assert = require('chai').assert
 const assert = require('assert-diff')
-const BitcoinBlock = require('../')
+const { BitcoinBlock, BitcoinTransaction } = require('../')
 
-const { toHashHex } = require('../classes/class-utils')
+const { toHashHex, dblSha2256 } = require('../classes/class-utils')
 
 // round difficulty to 2 decimal places, it's a calculated value
 function roundDifficulty (obj) {
@@ -42,7 +42,7 @@ function verifyHeader (block, expectedComplete) {
     }
     return p
   }, {})
-  assert.deepEqual(roundDifficulty(decodedHeader.toSerializable()), roundDifficulty(expected), 'decoded header data')
+  assert.deepEqual(roundDifficulty(decodedHeader.toPorcelain()), roundDifficulty(expected), 'decoded header data')
 
   // re-encode
   const encodedHeader = decodedHeader.encode()
@@ -50,62 +50,90 @@ function verifyHeader (block, expectedComplete) {
 }
 
 module.exports = function test (hash, block, expected) {
+  // ---------------------------------------------------------------------------
+  // prepare exepected data (trim fat we can't / won't test)
   cleanExpectedBlock(expected)
 
+  // ---------------------------------------------------------------------------
+  // verify _only_ the first 80 bytes and that we can parse basic data
   verifyHeader(block, expected)
 
+  // ---------------------------------------------------------------------------
+  // decode full block
   const decoded = BitcoinBlock.decode(block)
-  const serializableMin = decoded.toSerializable('min')
 
+  // ---------------------------------------------------------------------------
+  // test the serialized minimum form, where the `tx` array is just the txids
+  const serializableMin = decoded.toPorcelain('min')
   const minimalExpected = toMinimalExpected(expected)
-  // console.log(roundDifficulty(serializableMin), roundDifficulty(minimalExpected))
   assert.deepEqual(roundDifficulty(serializableMin), roundDifficulty(minimalExpected))
 
-  // see if we got hashes and segwit hashing right
+  // ---------------------------------------------------------------------------
+  // sift through each transaction, checking their properties individually
+  let hasSegWit = false
   for (let i = 0; i < expected.tx.length; i++) {
     const tx = decoded.tx[i]
-    const expectedTx = expected.tx[i]
+    const expectedTx = cleanExpectedTransaction(expected.tx[i])
+
+    // hash & txid correct? (early sanity check)
     assert.strictEqual(toHashHex(tx.txid), expectedTx.txid)
     assert.strictEqual(toHashHex(tx.hash), expectedTx.hash)
-  }
 
-  for (let i = 0; i < expected.tx.length; i++) {
-    const tx = decoded.tx[i]
-    const serializableTx = tx.toSerializable()
-    const expectedTx = cleanExpectedTransaction(expected.tx[i])
-    /*
-    console.dir(serializableTx, { depth: Infinity })
-    console.dir(expectedTx, { depth: Infinity })
-    */
-    // console.log(JSON.stringify(serializableTx, null, 2))
-    // console.log(JSON.stringify(expectedTx, null, 2))
+    // porcelain form correct?
+    const serializableTx = tx.toPorcelain()
     assert.deepEqual(serializableTx, expectedTx, `transaction ${i}`)
+
+    // full encoded form matches expected
+    const encodedTx = tx.encode()
+    const etxhash = toHashHex(dblSha2256(encodedTx))
+    assert.strictEqual(etxhash, expectedTx.hash)
+    assert.strictEqual(encodedTx.toString('hex'), expectedTx.hex)
+
+    // segwit encoded form matches expected
+    const encodedTxNoWitness = tx.encode(BitcoinTransaction.HASH_NO_WITNESS)
+    const etxid = toHashHex(dblSha2256(encodedTxNoWitness))
+    assert.strictEqual(etxid, expectedTx.txid)
+
+    if (etxid === etxhash) {
+      // not segwit
+      assert(tx.segWit === false)
+    } else {
+      // is segwit, whole block should be too
+      assert(tx.segWit === true)
+      hasSegWit = true
+    }
   }
+  assert(decoded.isSegWit() === hasSegWit)
 
-  // console.log(decoded.tx[0].toSerializable())
+  // ---------------------------------------------------------------------------
+  // test the serialized maximum form, where the `tx` array the full transaction
+  // data, potentially huge
+  const serializable = decoded.toPorcelain()
+  assert.deepEqual(roundDifficulty(serializable), roundDifficulty(expected))
 
-  /*
-  if (decoded.tx[0].segWit) { // should be: nHeight >= consensusParams.SegwitHeight (481824)
+  // ---------------------------------------------------------------------------
+  // check that we can properly calculate the transaction merkle root, this
+  // doesn't include witness data
+  const merkleRootNoWitness = toHashHex(decoded.calculateMerkleRoot(BitcoinBlock.HASH_NO_WITNESS))
+  assert.strictEqual(merkleRootNoWitness, expected.merkleroot, 'calculated merkle root')
+
+  // ---------------------------------------------------------------------------
+  // if this block includes segwit transacitons, check that we can properly
+  // calculate the full merkle root and then the witness commitment from that
+  // and the nonce found in the coinbase
+  //
+  // (only for `nHeight >= consensusParams.SegwitHeight` (481824))
+  if (hasSegWit) {
     const wci = decoded.tx[0].getWitnessCommitmentIndex()
     if (wci >= 0) {
-      const wc = decoded.tx[0].vout[wci]
-      console.log('scriptPubKey', wc.scriptPubKey.toString('hex'))
-      console.log('nonce', toHashHex(decoded.tx[0].vin[0].scriptWitness[0]))
-      console.log('witness merkle root     ', toHashHex(wc.scriptPubKey.slice(6)))
-      console.log('witness merkle root calc', toHashHex(dblSha2256(Buffer.concat([decoded.calculateMerkleRoot(), decoded.tx[0].vin[0].scriptWitness[0]]))))
-
-      console.log('merkle root source ', expected.merkleroot)
-      console.log('merkle root decoded', toHashHex(decoded.calculateMerkleRootNoWitness()))
-
-      console.log(decoded.tx[0].vin[0].scriptWitness)
+      // find the expected full merkle root in the first transaction
+      const witnessCommitmentOut = decoded.tx[0].vout[wci]
+      const expectedWitnessCommitment = witnessCommitmentOut.scriptPubKey.slice(6)
+      // calculate our own
+      const witnessCommitment = decoded.calculateWitnessCommitment()
+      assert.strictEqual(toHashHex(witnessCommitment), toHashHex(expectedWitnessCommitment), 'witness commitment')
     } else {
-      console.log('no witness commitment index')
+      assert.fail('no witness commitment index, what do?')
     }
-  } else {
-    console.log('not segwit')
   }
-  */
-
-  // can't test these things as they come from having a full blockchain state to work with
-  // while we are only working with isolated blocks
 }
