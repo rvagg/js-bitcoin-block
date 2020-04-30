@@ -1,6 +1,6 @@
-// const assert = require('chai').assert
+const assert = require('chai').assert
 // pretty diff
-const assert = require('assert-diff')
+// const assert = require('assert-diff')
 const { BitcoinBlock, BitcoinTransaction } = require('../')
 
 const { toHashHex, dblSha2256 } = require('../classes/class-utils')
@@ -95,7 +95,10 @@ function verifyRoundTrip (decoded, expected, block) {
 function verifyTransactionRoundTrip (tx, expectedTx, i) {
   // instantiate new
   const newTransaction = BitcoinTransaction.fromPorcelain(Object.assign({}, tx.toPorcelain()))
-  // printLast(newTransaction)
+  /* for debugging JSON output
+  require('fs').writeFileSync('act.json', JSON.stringify(Object.assign({}, newTransaction.toPorcelain(), { hex: null }), null, 2), 'utf8')
+  require('fs').writeFileSync('exp.json', JSON.stringify(Object.assign({}, expectedTx, { hex: null }), null, 2), 'utf8')
+  */
   assert.deepStrictEqual(roundDifficulty(cleanActualTransaction(newTransaction.toPorcelain(), i)), roundDifficulty(expectedTx), `re-instantiated data (${i})`)
   // encode newly instantiated
   const encodedNew = newTransaction.encode()
@@ -109,13 +112,25 @@ function verifyTransaction (tx, expectedTx, i) {
 
   // porcelain form correct?
   const serializableTx = cleanActualTransaction(tx.toPorcelain(), i)
-  assert.deepStrictEqual(serializableTx, expectedTx, `transaction ${i}`)
+  assert.deepStrictEqual(serializableTx, expectedTx, `transaction decode ${i}`)
 
-  // full encoded form matches expected
   const encodedTx = tx.encode()
+  // full encoded form matches expected
+  /* for debug - compare hex output and optionally watch encoding
+  // require('../coding').DEBUG = true
+  const w = (f, b) => {
+    const a = []
+    for (let i = 0; i < b.length; i += 50) {
+      a.push(`${i}: ` + b.slice(i, i + 50).toString('hex'))
+    }
+    require('fs').writeFileSync(f, a.join('\n'), 'utf8')
+  }
+  w('act.hex', encodedTx)
+  w('exp.hex', Buffer.from(expectedTx.hex, 'hex'))
+  */
   const etxhash = toHashHex(dblSha2256(encodedTx))
-  assert.strictEqual(etxhash, expectedTx.hash)
-  assert.strictEqual(encodedTx.toString('hex'), expectedTx.hex)
+  assert.strictEqual(etxhash, expectedTx.hash, `transaction encode hash ${i}`)
+  assert.strictEqual(encodedTx.toString('hex'), expectedTx.hex, `transaction encode raw ${i}`)
 
   // segwit encoded form matches expected
   const encodedTxNoWitness = tx.encode(BitcoinTransaction.HASH_NO_WITNESS)
@@ -197,7 +212,7 @@ function test (hash, block, expected) {
   // calculate the full merkle root and then the witness commitment from that
   // and the nonce found in the coinbase
   // (only for `nHeight >= consensusParams.SegwitHeight` (481824))
-  assert(decoded.isSegWit() === hasSegWit) // is this a segwit transaction?
+  assert(decoded.isSegWit() === hasSegWit, `expected isSegWit(): ${hasSegWit}`) // is this a segwit transaction?
   if (hasSegWit) {
     verifyWitnessCommitment(decoded, expected)
   }

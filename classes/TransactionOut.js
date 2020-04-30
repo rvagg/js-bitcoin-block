@@ -41,15 +41,18 @@ class BitcoinTransactionOut {
       const solution = solver(this.scriptPubKey)
       obj.scriptPubKey = {
         asm: scriptToAsmStr(this.scriptPubKey),
-        hex: this.scriptPubKey.toString('hex'),
-        type: solution.type
+        hex: this.scriptPubKey.toString('hex')
       }
       if (solution.solutions && solution.type !== types.TX_PUBKEY) {
         const dest = extractDestinations(this.scriptPubKey)
         if (dest) {
-          obj.scriptPubKey.addresses = dest.addresses.map((a) => encodeAddress(a, solution.type))
           obj.scriptPubKey.reqSigs = dest.required
+          obj.scriptPubKey.type = solution.type
+          obj.scriptPubKey.addresses = dest.addresses.map((a) => encodeAddress(a, solution.type))
         }
+      }
+      if (!obj.scriptPubKey.type) { // doing this because the bitcoin cli orders it between reqSigs and address
+        obj.scriptPubKey.type = solution.type
       }
     }
     return obj

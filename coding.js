@@ -4,7 +4,7 @@ const classRegistry = {}
 function writeCompactSize (size) {
   if (size < 253) {
     return Buffer.from([size])
-  } else if (size <= 0xfff) {
+  } else if (size <= 0xffff) {
     const b = Buffer.alloc(3)
     b.writeUInt8(253)
     b.writeUInt16LE(size, 1)
@@ -42,6 +42,9 @@ const encoders = {
 
     const b = Buffer.alloc(4)
     b.writeInt32LE(v)
+    if (module.exports.DEBUG) {
+      console.log(`int32_t[${v}]: ${b.toString('hex')}`)
+    }
     yield b
   },
 
@@ -52,6 +55,9 @@ const encoders = {
 
     const b = Buffer.alloc(4)
     b.writeUInt32LE(v)
+    if (module.exports.DEBUG) {
+      console.log(`uint32_t[${v}]: ${b.toString('hex')}`)
+    }
     yield b
   },
 
@@ -62,13 +68,18 @@ const encoders = {
     if (v.length !== 32) {
       throw new Error('Encoding uint256 requires 32-byte Buffer')
     }
-
+    if (module.exports.DEBUG) {
+      console.log(`uint256: ${v.toString('hex')}`)
+    }
     yield v
   },
 
   compactSlice: function * writeCompactSlice (v) {
     if (!Buffer.isBuffer(v)) {
       throw new Error('Encoding compact slice requires a "Buffer" type')
+    }
+    if (module.exports.DEBUG) {
+      console.log(`compactSlice[${v.length}]: ${writeCompactSize(v.length).toString('hex')} + ${v.toString('hex')}`)
     }
     yield writeCompactSize(v.length)
     yield v
@@ -92,6 +103,9 @@ const encoders = {
     buf[6] = hi
     hi = hi >> 8
     buf[7] = hi
+    if (module.exports.DEBUG) {
+      console.log(`int64_t: ${buf.toString('hex')}`)
+    }
     yield buf
   }
 }
@@ -111,6 +125,9 @@ function * encoder (typ, value, args) {
     const arr = value
     if (!Array.isArray(arr)) {
       throw new Error(`Encoding std::vector (${typ}) requires an array`)
+    }
+    if (module.exports.DEBUG) {
+      console.log(`cs[${arr.length}]: ${writeCompactSize(arr.length).toString('hex')}`)
     }
     yield writeCompactSize(arr.length)
     for (const v of arr) {
@@ -415,3 +432,4 @@ function setup (classes) {
 
 module.exports = setup
 module.exports.compactSizeSize = compactSizeSize
+module.exports.DEBUG = false
