@@ -372,12 +372,19 @@ function setVch (buf) {
   }
 
   let result = 0
-  for (let i = 0; i < buf.length; ++i) {
-    result |= buf[i] * Math.pow(2, 8 * i)
+  for (let i = 0; i !== buf.length; ++i) {
+    let v = buf[i]
+    if (i === buf.length - 1) {
+      // original version takes this bit off at the end but we run into bit-op
+      // problems for ints of a certain size, so take it off this small int before
+      // shifting it larger
+      v = v & 0x7f
+    }
+    result += v * (2 ** (8 * i))
   }
 
   if (buf[buf.length - 1] & 0x80) {
-    return -(result & (0x80 * Math.pow(2, buf.length - 1)))
+    return -result
   }
 
   return result
