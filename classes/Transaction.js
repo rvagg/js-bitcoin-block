@@ -4,8 +4,12 @@ const {
   WITNESS_SCALE_FACTOR,
   COIN,
   HASH_NO_WITNESS,
-  dblSha2256
+  SEGWIT_HEIGHT,
+  dblSha2256,
+  isHexString
 } = require('./class-utils')
+const BitcoinTransactionIn = require('./TransactionIn')
+const BitcoinTransactionOut = require('./TransactionOut')
 const NULL_HASH = Buffer.alloc(32)
 
 /**
@@ -85,6 +89,9 @@ class BitcoinTransaction {
   }
 
   getWitnessCommitmentIndex () {
+    if (!this.segWit) {
+      return -1
+    }
     // src/validation.cpp#GetWitnessCommitmentIndex
     let pos = -1
     for (let i = 0; i < this.vout.length; i++) {
@@ -102,6 +109,18 @@ class BitcoinTransaction {
     return pos
   }
 
+  getWitnessCommitment () {
+    const wci = this.getWitnessCommitmentIndex()
+    if (wci >= 0) {
+      const witnessCommitmentOut = this.vout[wci]
+      // bad-witness-nonce-size is supposed to make this strictly 6+32 bytes long but
+      // there are cases where it's longer
+      const witnessCommitment = witnessCommitmentOut.scriptPubKey.slice(6, 6 + 32)
+      return witnessCommitment
+    }
+    return null
+  }
+
   isCoinbase () {
     return this.vin &&
       this.vin.length === 1 &&
@@ -111,10 +130,82 @@ class BitcoinTransaction {
   }
 }
 
+BitcoinTransaction.fromPorcelain = function fromPorcelain (porcelain) {
+  if (typeof porcelain !== 'object') {
+    throw new TypeError('BitcoinTransaction porcelain must be an object')
+  }
+  if (typeof porcelain.version !== 'number') {
+    throw new TypeError('version property must be a number')
+  }
+  if (typeof porcelain.locktime !== 'number') {
+    throw new TypeError('locktime property must be a number')
+  }
+  if (!Array.isArray(porcelain.vin)) {
+    throw new TypeError('vin property must be an array')
+  }
+  if (!Array.isArray(porcelain.vout)) {
+    throw new TypeError('vin property must be an array')
+  }
+
+  let segWit = false
+  if (typeof porcelain.hash === 'string' && isHexString(porcelain.hash, 64) && typeof porcelain.txid === 'string' && isHexString(porcelain.txid, 64)) {
+    segWit = porcelain.hash !== porcelain.txid
+  } else if (typeof porcelain.size === 'number' && typeof porcelain.weight === 'number') {
+    segWit = porcelain.weight !== porcelain.size * (WITNESS_SCALE_FACTOR - 1) + porcelain.size
+  } else if (typeof porcelain.height === 'number') {
+    segWit = porcelain.height >= SEGWIT_HEIGHT
+  }
+
+  const vin = porcelain.vin.map(BitcoinTransactionIn.fromPorcelain)
+  if (segWit) {
+    const coinbase = !!porcelain.vin[0].coinbase
+    for (let i = coinbase ? 1 : 0; i < vin.length; i++) {
+      if (!vin[i].scriptWitness) {
+        vin[i].scriptWitness = []
+      }
+    }
+    if (porcelain.vin[0].coinbase && !vin[0].scriptWitness) {
+      vin[0].scriptWitness = [Buffer.alloc(32)]
+    }
+  }
+  const vout = porcelain.vout.map(BitcoinTransactionOut.fromPorcelain)
+
+  const transaction = new BitcoinTransaction(
+    porcelain.version,
+    segWit,
+    vin,
+    vout,
+    porcelain.locktime)
+
+  // calculate the hash for this block
+  // this comes from ../bitcoin-block, if it's not instantiated via there then it won't be available
+  if (typeof transaction.encode !== 'function') {
+    throw new Error('Transaction#encode() not available')
+  }
+  const rawBytes = transaction.encode()
+  transaction.rawBytes = rawBytes.toString('hex')
+  transaction.hash = dblSha2256(rawBytes)
+  const rawBytesNoWitness = transaction.encode(HASH_NO_WITNESS)
+  transaction.txid = transaction.segWit ? dblSha2256(rawBytesNoWitness) : transaction.hash
+
+  return new BitcoinTransaction(
+    transaction.version,
+    segWit,
+    transaction.vin,
+    transaction.vout,
+    transaction.lockTime,
+    rawBytes,
+    transaction.hash,
+    transaction.txid,
+    rawBytesNoWitness.length,
+    rawBytes.length
+  )
+}
+
 BitcoinTransaction.HASH_NO_WITNESS = HASH_NO_WITNESS
 
 // -------------------------------------------------------------------------------------------------------
-// Custom decoder descriptors and functions below here, used by ../decoder.js
+// Custom decoder and encoder descriptors and functions below here, used by ../coding.js
 // https://github.com/bitcoin/bitcoin/blob/41fa2926d86a57c9623d34debef20746ee2f454a/src/primitives/transaction.h#L181-L197
 BitcoinTransaction._nativeName = 'CTransaction'
 BitcoinTransaction._decodePropertiesDescriptor = decodeProperties(`

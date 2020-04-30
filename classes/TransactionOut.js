@@ -1,4 +1,4 @@
-const { decodeProperties } = require('./class-utils')
+const { decodeProperties, isHexString } = require('./class-utils')
 const { COIN } = require('./class-utils')
 const { types, scriptToAsmStr, solver, extractDestinations, encodeAddress } = require('./script')
 
@@ -54,10 +54,35 @@ class BitcoinTransactionOut {
     }
     return obj
   }
+
+  /**
+  * Convert to a serializable form that has nice stringified hashes and other simplified forms. May be
+  * useful for simplified inspection.
+  */
+  toPorcelain () {
+    return this.toJSON()
+  }
+}
+
+BitcoinTransactionOut.fromPorcelain = function fromPorcelain (porcelain) {
+  if (typeof porcelain !== 'object') {
+    throw new TypeError('BitcoinTransactionOut porcelain must be an object')
+  }
+  if (typeof porcelain.value !== 'number') {
+    throw new TypeError('value property must be a number')
+  }
+  if (typeof porcelain.scriptPubKey !== 'object') {
+    throw new TypeError('scriptPubKey property must be an object')
+  }
+  if (typeof porcelain.scriptPubKey.hex !== 'string' || !isHexString(porcelain.scriptPubKey.hex)) {
+    throw new TypeError('scriptPubKey.hex property must be a hex string')
+  }
+  const value = Math.round(porcelain.value * COIN) // round to deal with the likely fraction, we need a uint64
+  return new BitcoinTransactionOut(value, Buffer.from(porcelain.scriptPubKey.hex, 'hex'))
 }
 
 // -------------------------------------------------------------------------------------------------------
-// Custom decoder descriptors and functions below here, used by ../decoder.js
+// Custom decoder and encoder descriptors and functions below here, used by ../coding.js
 
 BitcoinTransactionOut._nativeName = 'CTxOut'
 // https://github.com/bitcoin/bitcoin/blob/41fa2926d86a57c9623d34debef20746ee2f454a/src/primitives/transaction.h#L136-L137

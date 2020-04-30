@@ -1,8 +1,10 @@
+const assert = require('assert')
 const multihashing = require('multihashing')
 const RIPEMD160 = require('ripemd160')
 
 const COIN = 100000000
 const WITNESS_SCALE_FACTOR = 4
+const SEGWIT_HEIGHT = 481824
 const HASH_NO_WITNESS = Symbol.for('hash-no-witness')
 
 function decodeProperties (propertiesDescriptor) {
@@ -24,6 +26,18 @@ function toHashHex (hash) {
     rev[hash.length - i - 1] = hash[i]
   }
   return rev.toString('hex')
+}
+
+function fromHashHex (hash) {
+  const buf = Buffer.from(hash, 'hex')
+  assert(buf.length === 32)
+  const mid = buf.length / 2
+  for (let i = 0; i < mid; i++) {
+    const bi = buf[i]
+    buf[i] = buf[buf.length - i - 1]
+    buf[buf.length - i - 1] = bi
+  }
+  return buf
 }
 
 function dblSha2256 (bytes) {
@@ -57,12 +71,19 @@ function merkleRoot (hashes) {
   return hashes[0]
 }
 
+function isHexString (str, len) {
+  return (len === undefined || str.length === len) && /^[0-9a-f]*$/.test(str)
+}
+
 module.exports.decodeProperties = decodeProperties
 module.exports.toHashHex = toHashHex
+module.exports.fromHashHex = fromHashHex
 module.exports.dblSha2256 = dblSha2256
 module.exports.ripemd160 = ripemd160
 module.exports.hash160 = hash160
 module.exports.merkleRoot = merkleRoot
+module.exports.isHexString = isHexString
 module.exports.COIN = COIN
 module.exports.WITNESS_SCALE_FACTOR = WITNESS_SCALE_FACTOR
+module.exports.SEGWIT_HEIGHT = SEGWIT_HEIGHT
 module.exports.HASH_NO_WITNESS = HASH_NO_WITNESS

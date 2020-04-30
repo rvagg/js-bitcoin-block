@@ -390,6 +390,7 @@ function decodeType (buf, type) {
       }
 
       const newInstance = new (Function.prototype.bind.apply(clazz, [null, ...properties])) // eslint-disable-line
+      // console.log('newInstance(', clazz, '): ', newInstance)
       return newInstance
     }
   }

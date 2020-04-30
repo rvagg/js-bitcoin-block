@@ -1,5 +1,6 @@
-const { toHashHex, decodeProperties } = require('./class-utils')
+const { toHashHex, fromHashHex, decodeProperties, isHexString } = require('./class-utils')
 const { scriptToAsmStr } = require('./script')
+const BitcoinOutPoint = require('./OutPoint')
 
 /**
  * A class representation of a Bitcoin TransactionIn, multiple of which are contained within each {@link BitcoinTransaction}.
@@ -35,33 +36,96 @@ class BitcoinTransactionIn {
    * The serailizable form converts this object to `{ coinbase: scriptSig, sequence: sequence }` to match the Bitcoin API output.
    */
   toJSON (_, coinbase) {
+    let obj
     if (coinbase) {
-      return {
+      obj = {
         coinbase: this.scriptSig.toString('hex'),
         sequence: this.sequence
       }
-    }
-    const obj = {
-      txid: this.prevout ? toHashHex(this.prevout.hash) : null,
-      vout: this.prevout ? this.prevout.n : -1,
-      scriptSig: null,
-      sequence: this.sequence
-    }
-    if (this.scriptSig) {
-      obj.scriptSig = {
-        asm: scriptToAsmStr(this.scriptSig, true),
-        hex: this.scriptSig.toString('hex')
+    } else {
+      obj = {
+        txid: toHashHex(this.prevout.hash),
+        vout: this.prevout.n,
+        scriptSig: {
+          asm: scriptToAsmStr(this.scriptSig, true),
+          hex: this.scriptSig.toString('hex')
+        },
+        sequence: this.sequence
       }
     }
+
     if (this.scriptWitness && this.scriptWitness.length) {
       obj.txinwitness = this.scriptWitness.map((w) => w.toString('hex'))
     }
+
     return obj
+  }
+
+  /**
+  * Convert to a serializable form that has nice stringified hashes and other simplified forms. May be
+  * useful for simplified inspection.
+  */
+  toPorcelain () {
+    return this.toJSON()
   }
 }
 
+BitcoinTransactionIn.fromPorcelain = function fromPorcelain (porcelain) {
+  if (typeof porcelain !== 'object') {
+    throw new TypeError('BitcoinTransactionIn porcelain must be an object')
+  }
+
+  if (typeof porcelain.sequence !== 'number') {
+    throw new TypeError('sequence property must be a number')
+  }
+  let vin
+  if (porcelain.coinbase) {
+    if (typeof porcelain.coinbase !== 'string' || !isHexString(porcelain.coinbase)) {
+      throw new Error('coinbase property should be a hex string')
+    }
+    const outpoint = new BitcoinOutPoint(Buffer.alloc(32), 0xffffffff) // max uint32 is "null"
+    vin = new BitcoinTransactionIn(outpoint, Buffer.from(porcelain.coinbase, 'hex'), porcelain.sequence)
+  } else {
+    if (typeof porcelain.txid !== 'string' || !isHexString(porcelain.txid, 64)) {
+      throw new Error('txid property should be a 64-character hex string')
+    }
+    if (typeof porcelain.vout !== 'number') {
+      throw new TypeError('vout property must be a number')
+    }
+    if (typeof porcelain.scriptSig !== 'object') {
+      throw new TypeError('scriptSig property must be an object')
+    }
+    if (typeof porcelain.scriptSig.hex !== 'string' || !isHexString(porcelain.scriptSig.hex)) {
+      throw new TypeError('scriptSig.hex property must be a hex string')
+    }
+
+    const outpoint = new BitcoinOutPoint(fromHashHex(porcelain.txid), porcelain.vout)
+    vin = new BitcoinTransactionIn(outpoint, Buffer.from(porcelain.scriptSig.hex, 'hex'), porcelain.sequence)
+  }
+
+  let scriptWitness
+  if (porcelain.txinwitness) {
+    if (!Array.isArray(porcelain.txinwitness)) {
+      throw new TypeError('txinwitness property must be an array')
+    }
+    scriptWitness = []
+    for (const wit of porcelain.txinwitness) {
+      if (!isHexString(wit)) {
+        throw new TypeError('txinwitness elements must be hex strings: ', wit)
+      }
+      scriptWitness.push(Buffer.from(wit, 'hex'))
+    }
+  }
+
+  if (scriptWitness) {
+    vin.scriptWitness = scriptWitness
+  }
+
+  return vin
+}
+
 // -------------------------------------------------------------------------------------------------------
-// Custom decoder descriptors and functions below here, used by ../decoder.js
+// Custom decoder and encoder descriptors and functions below here, used by ../coding.js
 
 BitcoinTransactionIn._nativeName = 'CTxIn'
 // https://github.com/bitcoin/bitcoin/blob/41fa2926d86a57c9623d34debef20746ee2f454a/src/primitives/transaction.h#L66-L68

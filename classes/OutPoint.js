@@ -36,7 +36,7 @@ class BitcoinOutPoint {
 }
 
 // -------------------------------------------------------------------------------------------------------
-// Custom decoder descriptors and functions below here, used by ../decoder.js
+// Custom decoder and encoder descriptors and functions below here, used by ../coding.js
 
 BitcoinOutPoint._nativeName = 'COutPoint'
 // https://github.com/bitcoin/bitcoin/blob/41fa2926d86a57c9623d34debef20746ee2f454a/src/primitives/transaction.h#L21-L22

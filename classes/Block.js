@@ -1,12 +1,15 @@
 const {
   decodeProperties,
   toHashHex,
+  fromHashHex,
   WITNESS_SCALE_FACTOR,
   HASH_NO_WITNESS,
   dblSha2256,
-  merkleRoot
+  merkleRoot,
+  isHexString
 } = require('./class-utils')
 const { compactSizeSize } = require('../coding')
+const BitcoinTransaction = require('./Transaction')
 
 /**
  * A class representation of a Bitcoin Block, parent for all of the data included in the raw block data
@@ -55,21 +58,27 @@ class BitcoinBlock {
     this.tx = tx
     this.size = size
 
-    this.difficulty = ((() => {
-      // https://github.com/bitcoin/bitcoin/blob/7eed413e72a236b6f1475a198f7063fd24929e23/src/rpc/blockchain.cpp#L67-L87
-      let nshift = (this.bits >> 24) & 0xff
-      let ddiff = 0x0000ffff / (this.bits & 0x00ffffff)
-      while (nshift < 29) {
-        ddiff *= 256
-        nshift++
-      }
-      while (nshift > 29) {
-        ddiff /= 256
-        nshift--
-      }
-      return ddiff
-    })())
+    this._calculateDifficulty()
+    this._calculateStrippedSize()
+    this._calculateWeight()
+  }
 
+  _calculateDifficulty () {
+    // https://github.com/bitcoin/bitcoin/blob/7eed413e72a236b6f1475a198f7063fd24929e23/src/rpc/blockchain.cpp#L67-L87
+    let nshift = (this.bits >> 24) & 0xff
+    let ddiff = 0x0000ffff / (this.bits & 0x00ffffff)
+    while (nshift < 29) {
+      ddiff *= 256
+      nshift++
+    }
+    while (nshift > 29) {
+      ddiff /= 256
+      nshift--
+    }
+    this.difficulty = ddiff
+  }
+
+  _calculateStrippedSize () {
     this.strippedSize = this.tx ? ((() => {
       const txLead = compactSizeSize(this.tx.length)
       const txSizeNoWitness = this.tx.reduce((p, tx) => {
@@ -78,7 +87,9 @@ class BitcoinBlock {
       }, 0)
       return 80 + txLead + txSizeNoWitness
     })()) : null
+  }
 
+  _calculateWeight () {
     this.weight = this.tx ? this.strippedSize * (WITNESS_SCALE_FACTOR - 1) + this.size : null
   }
 
@@ -173,12 +184,77 @@ class BitcoinBlock {
     this._segWit = false
     return false
   }
+
+  getWitnessCommitment () {
+    if (!this.tx || !this.tx.length) {
+      throw new Error('Cannot get witness commitment without transactions')
+    }
+    return this.tx[0].getWitnessCommitment() // will return null if it's not segwit
+  }
 }
 
 BitcoinBlock.HASH_NO_WITNESS = HASH_NO_WITNESS
 
+BitcoinBlock.fromPorcelain = function fromPorcelain (porcelain) {
+  if (typeof porcelain !== 'object') {
+    throw new TypeError('BitcoinBlock porcelain must be an object')
+  }
+  if (porcelain.previousblockhash != null) {
+    if (typeof porcelain.previousblockhash !== 'string' || !isHexString(porcelain.previousblockhash, 64)) {
+      throw new Error('previousblockhash property should be a 64-character hex string')
+    }
+  } // else assume genesis
+  if (typeof porcelain.version !== 'number') {
+    throw new TypeError('version property must be a number')
+  }
+  if (typeof porcelain.merkleroot !== 'string' || !isHexString(porcelain.merkleroot, 64)) {
+    throw new Error('merkleroot property should be a 64-character hex string')
+  }
+  if (typeof porcelain.time !== 'number') {
+    throw new TypeError('time property must be a number')
+  }
+  if (typeof porcelain.difficulty !== 'number') {
+    throw new TypeError('difficulty property must be a number')
+  }
+  if (typeof porcelain.bits !== 'string' && !/^[0-9a-f]+$/.test(porcelain.bits)) {
+    throw new TypeError('bits property must be a hex string')
+  }
+  let tx
+  if (porcelain.tx) {
+    if (!Array.isArray(porcelain.tx)) {
+      throw new TypeError('tx property must be an array')
+    }
+    tx = porcelain.tx.map(BitcoinTransaction.fromPorcelain)
+  }
+  const block = new BitcoinBlock(
+    porcelain.version,
+    porcelain.previousblockhash ? fromHashHex(porcelain.previousblockhash) : Buffer.alloc(32),
+    fromHashHex(porcelain.merkleroot),
+    porcelain.time,
+    parseInt(porcelain.bits, 16),
+    porcelain.nonce,
+    null, // hash
+    tx
+  )
+
+  // calculate the hash for this block
+  // this comes from ../bitcoin-block, if it's not instantiated via there then it won't be available
+  if (typeof block.encode !== 'function') {
+    throw new Error('Block#encode() not available')
+  }
+  const rawData = block.encode()
+  block.hash = dblSha2256(rawData.slice(0, 80))
+  if (tx) {
+    block.size = rawData.length
+    block._calculateStrippedSize()
+    block._calculateWeight()
+  }
+
+  return block
+}
+
 // -------------------------------------------------------------------------------------------------------
-// Custom decoder descriptors and functions below here, used by ../decoder.js
+// Custom decoder and encoder descriptors and functions below here, used by ../coding.js
 
 BitcoinBlock._nativeName = 'CBlockHeader'
 // https://github.com/bitcoin/bitcoin/blob/41fa2926d86a57c9623d34debef20746ee2f454a/src/primitives/block.h#L24-L29
@@ -203,6 +279,7 @@ uint256 merkleroot;
 uint32_t time;
 uint32_t bits;
 uint32_t nonce;
+_customEncodeTransactions
 `)
 
 BitcoinBlock._customDecoderMarkStart = function (decoder, properties, state) {
@@ -222,6 +299,12 @@ BitcoinBlock._customDecodeSize = function (decoder, properties, state) {
   const end = decoder.currentPosition()
   const size = end - start
   properties.push(size)
+}
+
+BitcoinBlock._customEncodeTransactions = function * (block, encoder, args) {
+  if (Array.isArray(block.tx)) {
+    yield * encoder('std::vector<CTransaction>', block.tx, args)
+  }
 }
 
 class BitcoinBlockHeaderOnly extends BitcoinBlock {}
