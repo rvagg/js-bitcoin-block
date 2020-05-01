@@ -24,7 +24,7 @@ function writeCompactSize (size) {
 function compactSizeSize (size) {
   if (size < 253) {
     return 1
-  } else if (size <= 0xfff) {
+  } else if (size <= 0xffff) {
     return 3
   } else if (size <= 0xffffffff) {
     return 5

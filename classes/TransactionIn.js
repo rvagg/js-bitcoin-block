@@ -39,8 +39,7 @@ class BitcoinTransactionIn {
     let obj
     if (coinbase) {
       obj = {
-        coinbase: this.scriptSig.toString('hex'),
-        sequence: this.sequence
+        coinbase: this.scriptSig.toString('hex')
       }
     } else {
       obj = {
@@ -49,14 +48,15 @@ class BitcoinTransactionIn {
         scriptSig: {
           asm: scriptToAsmStr(this.scriptSig, true),
           hex: this.scriptSig.toString('hex')
-        },
-        sequence: this.sequence
+        }
       }
     }
 
     if (this.scriptWitness && this.scriptWitness.length) {
       obj.txinwitness = this.scriptWitness.map((w) => w.toString('hex'))
     }
+
+    obj.sequence = this.sequence
 
     return obj
   }

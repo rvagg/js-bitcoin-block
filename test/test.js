@@ -1,5 +1,5 @@
 const assert = require('chai').assert
-// pretty diff
+// pretty diff but expensive for large diffs
 // const assert = require('assert-diff')
 const { BitcoinBlock, BitcoinTransaction } = require('../')
 
@@ -85,10 +85,26 @@ function verifyRoundTrip (decoded, expected, block) {
   const from = Object.assign({}, decoded.toPorcelain())
   from.tx = from.tx.map((tx) => Object.assign({}, tx))
   const newBlock = BitcoinBlock.fromPorcelain(from)
+  /* for debugging JSON output
+  require('fs').writeFileSync('act.json', JSON.stringify(Object.assign({}, newBlock.toPorcelain()), null, 2), 'utf8')
+  require('fs').writeFileSync('exp.json', JSON.stringify(Object.assign({}, expected), null, 2), 'utf8')
+  */
   const newBlockClean = roundDifficulty(cleanActualBlock(newBlock.toPorcelain()))
   assert.deepStrictEqual(newBlockClean, roundDifficulty(expected), 're-instantiated data')
   // encode newly instantiated
   const encodedNew = newBlock.encode()
+  /* for debug - compare hex output and optionally watch encoding
+  // require('../coding').DEBUG = true
+  const w = (f, b) => {
+    const a = []
+    for (let i = 0; i < b.length; i += 50) {
+      a.push(`${i}: ` + b.slice(i, i + 50).toString('hex'))
+    }
+    require('fs').writeFileSync(f, a.join('\n'), 'utf8')
+  }
+  w('act.hex', encodedNew)
+  w('exp.hex', block)
+  */
   assert.strictEqual(encodedNew.toString('hex'), block.toString('hex'), 're-instantiated and encoded block')
 }
 
