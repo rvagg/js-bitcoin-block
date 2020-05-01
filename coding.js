@@ -35,7 +35,7 @@ function compactSizeSize (size) {
 }
 
 const encoders = {
-  int32_t: function * writeUInt32LE (v) {
+  int32_t: function * writeInt32LE (v) {
     if (typeof v !== 'number') {
       throw new Error('Encoding int32 requires a "number" type')
     }

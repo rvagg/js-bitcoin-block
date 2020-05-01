@@ -128,6 +128,10 @@ function verifyTransaction (tx, expectedTx, i) {
 
   // porcelain form correct?
   const serializableTx = cleanActualTransaction(tx.toPorcelain(), i)
+  /* for debugging JSON output
+  require('fs').writeFileSync('act.json', JSON.stringify(Object.assign({}, serializableTx, { hex: null }), null, 2), 'utf8')
+  require('fs').writeFileSync('exp.json', JSON.stringify(Object.assign({}, expectedTx, { hex: null }), null, 2), 'utf8')
+  */
   assert.deepStrictEqual(serializableTx, expectedTx, `transaction decode ${i}`)
 
   const encodedTx = tx.encode()

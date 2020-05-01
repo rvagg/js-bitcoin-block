@@ -210,7 +210,7 @@ BitcoinTransaction.HASH_NO_WITNESS = HASH_NO_WITNESS
 BitcoinTransaction._nativeName = 'CTransaction'
 BitcoinTransaction._decodePropertiesDescriptor = decodeProperties(`
 _customDecoderMarkStart
-const uint32_t nVersion
+const int32_t nVersion
 _customDecodeSegWit
 const std::vector<CTxIn> vin;
 const std::vector<CTxOut> vout;
@@ -222,7 +222,7 @@ _customDecodeHashNoWitness
 _customDecodeSize
 `)
 BitcoinTransaction._encodePropertiesDescriptor = decodeProperties(`
-const uint32_t version
+const int32_t version
 _customEncodeSegWit
 const std::vector<CTxIn> vin;
 const std::vector<CTxOut> vout;

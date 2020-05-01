@@ -622,15 +622,9 @@ function extractDestination (buf) {
   } else if (solution.type === types.TX_WITNESS_V0_SCRIPTHASH) {
     return solution.solutions[0]
   } else if (solution.type === types.TX_WITNESS_UNKNOWN) {
-    /* TODO:
-    WitnessUnknown unk;
-    unk.version = vSolutions[0][0];
-    std::copy(vSolutions[1].begin(), vSolutions[1].end(), unk.program);
-    unk.length = vSolutions[1].size();
-    addressRet = unk;
-    return true;
-    */
-    return solution.solutions[1]
+    const unk = solution.solutions[1]
+    unk.witnessUnknownVersion = solution.solutions[0][0]
+    return unk
   }
   // Multisig txns have more than one address...
   return null
@@ -692,7 +686,15 @@ function encodeAddress (buf, type) {
     const words = bech32.toWords(buf)
     return bech32.encode(BECH32_HRP, [0, ...words]) // 0 appended to the beginning as per DestinationEncoder()
   }
-  return 'unknown encoding'
+  if (type === types.TX_WITNESS_UNKNOWN) {
+    const version = buf.witnessUnknownVersion
+    if (version < 1 || version > 16 || buf.length < 2 || buf.length > 40) {
+      return ''
+    }
+    const words = bech32.toWords(buf)
+    return bech32.encode(BECH32_HRP, [buf.witnessUnknownVersion, ...words])
+  }
+  return `Unknown encoding [${type}]`
 }
 
 module.exports.MAX_SCRIPT_SIZE = MAX_SCRIPT_SIZE
