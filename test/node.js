@@ -12,7 +12,6 @@ module.exports = readdirSync(path.join(__dirname, 'fixtures'))
       test(
         hash,
         Buffer.from(await fs.readFile(path.join(__dirname, 'fixtures', `${hash}.hex`), 'utf8'), 'hex'),
-        // require(path.join(__dirname, 'fixtures', `${hash}.head.json`))
         require(path.join(__dirname, 'fixtures', `${hash}.json`))
       )
     }

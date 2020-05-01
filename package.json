@@ -19,7 +19,7 @@
     "lint": "standard",
     "test:browser": "polendina --runner=bare-async --cleanup test/browser.js",
     "test:node": "polendina-node bare-async test/node.js",
-    "test": "npm run lint && npm run test:node && npm run test:browser",
+    "test": "npm run lint && npm run test:node",
     "docs": "jsdoc4readme --readme *.js classes/*.js"
   },
   "author": "Rod <rod@vagg.org> (http://r.va.gg/)",
