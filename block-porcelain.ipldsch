@@ -1,0 +1,94 @@
+# Bitcoin Block Porcelain API
+#
+# This schema is for illustrative and documentation purposes only. It describes
+# the shape of the data returned by the Bitcoin RPC (and `bitcoin-cli`) for
+# blocks and transactions minus chain-contextual data that is not derivable
+# from the independent block data alone.
+#
+# See https://specs.ipld.io/schemas/ for details about IPLD Schemas
+#
+
+# Block is the root structure, representing the header data and containing the
+# Transactions.
+#
+type Block struct {
+  hash String                       # uint256 BE in hex form, the hash of the block header
+  version Int
+  versionHex String                 # same as version, but base16
+  previousblockhash optional String # uint256 BE in hex form, will not be present for the genesis block
+  merkleroot String                 # uint256 BE in hex form
+  time Int
+  bits Int
+  difficulty Float                  # derived from `bits`
+  nonce Int
+  size optional Int                 # size in bytes of entire block present when transactions are present
+  strippedsize optional Int         # size in bytes of block without witness data, present when transactions are present
+  weight optional Int               # derived from `size` and `strippedsize`
+  tx optional [Transaction]         # not present when header data only is being represented
+  nTx optional Int                  # number of transactions, when present
+}
+
+# Each Block contains many Transactions in its `tx` array. Transactional data
+# is contained in the `vin` and `vout` arrays that represent the flow of coins.
+# `txid` and `hash` will be the same for non-SegWit Transactions, however, since
+# BIP141, witness data excluded from the `txid` and stored in a separate data
+# structure for the purpose of creating the transaction merkle stored in the
+# header. Two forms of transactions are used: those stripped of witness data and
+# those containing witness data. The full hash is included in a separate merkle
+# tree that is referenced in the coinbase of a Block (the first Transaction).
+#
+type Transaction struct {
+  txid String                       # uint256 BE in hex form, hash of transaction without witness data
+  hash String                       # uint256 BE in hex form, hash of transaction with witness ata
+  version Int
+  size Int                          # size in bytes of this transaction within the block
+  vsize Int                         # virtual size in bytes, calculated from weight
+  weight Int                        # derived from `size` and size without witness data
+  locktime Int
+  vin [TransactionIn]
+  vout [TransactionOut]
+  hex String                        # full raw bytes of this transaction in hex
+}
+
+# A faux-union that can be discriminated by the presence of the `coinbase`
+# property. The first Transaction in a Block will have a single
+# TransactionInCoinbase, while the remaining Transactions in a Block will have
+# TransactionInStandard's.
+#
+type TransactionIn union {
+  | TransactionInCoinbase
+  | TransactionInStandard
+}
+
+type TransactionInStandard struct {
+  txid String                       # uint256 BE in hex form, the txid of the Transaction whose TransactionOut linked to this TransactionIn
+  vout Int                          # the index of the TransactionOut in the Transaction linked to this TransactionIn
+  scriptSig TransactionInScriptSig
+  txinwitness [String]              # the script witness stack, arbitrary byte arrays in hex form
+  sequence Int
+}
+
+type TransactionInCoinbase struct {
+  coinbase String                  # The scriptSig in hex form of the coinbase
+  txinwitness [String]             # The witness commitment nonce, this will be a single element array containing a 64-character hex string
+  sequence Int
+}
+
+type TransactionInScriptSig struct {
+  asm String                       # The scriptSig decoded into ASM form
+  hex String                       # The raw scriptSig in hex form
+}
+
+type TransactionOut struct {
+  n optional Int                   # The index of this TransactionOut (if instantiated from a Transaction)
+  value Int                        # The value of this transaction in Bitcoin
+  scriptPubKey ScriptPubKey
+}
+
+type ScriptPubKey struct {
+  asm String                       # The scriptPubKey decoded into ASM form
+  hex String                       # The raw scriptPubKey in hex form
+  reqSigs optional Int
+  type String
+  addresses [String]
+}

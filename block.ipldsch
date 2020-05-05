@@ -4,12 +4,21 @@
 # fixed-format encoding rather than an IPLD DAG format, for which IPLD Schemas
 # are intended to describe.
 #
+# This schema should be read as describing the raw block format with additional
+# properties included to show the content-addressing links between the discrete
+# entities. These links are prefixed with the `&` link descriptor and are not
+# native to the block but are derivable from block data.
+#
+# See https://specs.ipld.io/schemas/ for details about IPLD Schemas
+#
 
 # Header is the first 80 bytes of each Bitcoin block
 type Header struct {
   version Int
-  prevBlock &Header # 256-bit hash, convertible to a CID
-  txMerkleRoot &TransactionMerkle
+  previousblockhash Bytes
+  parent &Header # previousblockhash converted to CID with `bitcoin-block` codec
+  merkleroot Bytes
+  tx &TransactionMerkle # merkleroot converted to CID with `bitcoin-tx` codec
   time Int
   bits Int
   nonce Int
@@ -39,16 +48,16 @@ type MaybeTransaction union {
 # that merkle tree may have scriptWitness data attached.
 type Transaction struct {
   version Int
-  segWit optional Bool (implicit "false")
+  segwit optional Bool (implicit "false")
   vin [TxIn]
   vout [TxOut]
-  scriptWitness optional [Witness] # same number of elements as `vin`
-  lockTime Int
+  scriptwitness optional [Witness] # same number of elements as `vin`
+  locktime Int
 }
 
 type TxIn struct {
   prevOut OutPoint
-  scriptSig String # unbounded vec<char>
+  scriptSig Bytes # unbounded vec<char>
   sequence Int
 }
 

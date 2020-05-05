@@ -3,11 +3,10 @@ const { COIN } = require('./class-utils')
 const { types, scriptToAsmStr, solver, extractDestinations, encodeAddress } = require('./script')
 
 /**
- * A class representation of a Bitcoin TransactionOut, multiple of which are contained within each {@link BitcoinTransaction}.
+ * A class representation of a Bitcoin TransactionOut, multiple of which are contained within each
+ * {@link BitcoinTransaction} in its `vout` array.
  *
- * This class isn't explicitly exported, access it for direct use with `require('bitcoin-block/classes/TransactionOut')`.
- *
- * @property {BigInt} value - an amount / value for this TransactionOut
+ * @property {number} value - an amount / value for this TransactionOut (in satoshis, not BTC)
  * @property {Uint8Array|Buffer} scriptPubKey - an arbitrary length byte array
  * @class
  */
@@ -17,7 +16,7 @@ class BitcoinTransactionOut {
    *
    * See the class properties for expanded information on these parameters.
    *
-   * @param {BigInt} value
+   * @param {BigInt|number} value
    * @param {Uint8Array|Buffer} scriptPubKey
    * @constructs BitcoinTransactionOut
    */
@@ -26,12 +25,6 @@ class BitcoinTransactionOut {
     this.scriptPubKey = scriptPubKey
   }
 
-  /**
-   * Convert to a serializable form that has nice stringified hashes and other simplified forms. May be
-   * useful for simplified inspection.
-   *
-   * The serialized version includes the raw `value` as `valueZat` while `value` is a proper Bitcoin coin value.
-   */
   toJSON (n) {
     const obj = { value: this.value / COIN }
     if (typeof n === 'number') {
@@ -59,14 +52,41 @@ class BitcoinTransactionOut {
   }
 
   /**
-  * Convert to a serializable form that has nice stringified hashes and other simplified forms. May be
-  * useful for simplified inspection.
+  * Convert to a serializable form that has nice stringified hashes and other simplified forms. May
+  * be useful for simplified inspection.
+  *
+  * The object returned by this method matches the shape of the JSON structure provided by the
+  * `getblock` (or `gettransaction`) RPC call of Bitcoin Core. Performing a `JSON.stringify()` on
+  * this object will yield the same data as the RPC.
+  *
+  * See [block-porcelain.ipldsch](block-porcelain.ipldsch) for a description of the layout of the
+  * object returned from this method.
+  *
+  * @returns {object}
   */
   toPorcelain () {
     return this.toJSON()
   }
 }
 
+/**
+ * Instantiate a `BitcoinTransactionIn` from porcelain data. This is the inverse of
+ * {@link BitcoinTransactionOut#toPorcelain}.
+ *
+ * This function is normally called from {@link BitcoinTransaction.fromPorcelain} to instantiate the
+ * each element of the `vin` array.
+ *
+ * Fields required to instantiate a transaction are:
+ *
+ * * `value` number - the BTC value of this transaction (not satoshis, which are used in the
+ *   BitcoinTransactionOut).
+ * * `scriptPubKey` object:
+ *   - `scriptPubKey.hex` hex string - the raw scriptPubKey data (the asm isn't used)
+ *
+ * @function
+ * @param porcelain the porcelain form of a BitcoinTransactionOut
+ * @returns {BitcoinTransactionOut}
+ */
 BitcoinTransactionOut.fromPorcelain = function fromPorcelain (porcelain) {
   if (typeof porcelain !== 'object') {
     throw new TypeError('BitcoinTransactionOut porcelain must be an object')

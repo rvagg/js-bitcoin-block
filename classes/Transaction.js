@@ -13,16 +13,25 @@ const BitcoinTransactionOut = require('./TransactionOut')
 const NULL_HASH = Buffer.alloc(32)
 
 /**
- * A class representation of a Bitcoin Transaction, multiple of which are contained within each {@link BitcoinBlock}.
+ * A class representation of a Bitcoin Transaction, multiple of which are contained within each
+ * {@link BitcoinBlock}.
  *
- * This class isn't explicitly exported, access it for direct use with `require('bitcoin-block/classes/Transaction')`.
- *
+ * @name BitcoinTransaction
  * @property {number} version
- * @property {boolean} segWit
- * @property {Array.<BitcoinTransactionIn>} vin
- * @property {Array.<BitcoinTransactionIn>} vout
+ * @property {boolean} segWit - whether this transaction contains witness data or was encoded with
+ * possibly separate witness data
+ * @property {Array.<BitcoinTransactionIn>} vin - an array of {@link BitcoinTransactionIn}s
+ * @property {Array.<BitcoinTransactionIn>} vout - an array of {@link BitcoinTransactionOut}s
  * @property {number} lockTime
- * @property {Uint8Array|Buffer} hash - 256-bit hash, a double SHA2-256 hash of all bytes making up this block (calculated)
+ * @property {Uint8Array|Buffer} rawBytes - the raw bytes of the encoded form of this transaction
+ * @property {Uint8Array|Buffer} hash - the hash of the entire transaction, including witness data
+ * @property {Uint8Array|Buffer} txid - the hash of the transaction minus witness data
+ * @property {number} sizeNoWitness - the sise of the transaction in bytes when encoded without
+ * witness data
+ * @property {number} size - the size of the transaction when encoded with witness data (i.e. the
+ * raw form stored on disk)
+ * @property {number} vsize
+ * @property {number} weight
  * @class
  */
 class BitcoinTransaction {
@@ -31,16 +40,16 @@ class BitcoinTransaction {
    *
    * See the class properties for expanded information on these parameters.
    *
-   * @property {number} version
-   * @property {boolean} segWit
-   * @property {Array.<BitcoinTransactionIn>} vin
-   * @property {Array.<BitcoinTransactionIn>} vout
-   * @property {number} lockTime
-   * @property {Uint8Array|Buffer} rawBytes
-   * @property {Uint8Array|Buffer} hash
-   * @property {Uint8Array|Buffer} txid
-   * @property {number} sizeNoWitness
-   * @property {number} size
+   * @param {number} version
+   * @param {boolean} segWit
+   * @param {Array.<BitcoinTransactionIn>} vin
+   * @param {Array.<BitcoinTransactionIn>} vout
+   * @param {number} lockTime
+   * @param {Uint8Array|Buffer} [rawBytes]
+   * @param {Uint8Array|Buffer} [hash]
+   * @param {Uint8Array|Buffer} [txid]
+   * @param {number} [sizeNoWitness]
+   * @param {number} [size]
    * @constructs BitcoinTransaction
    */
   constructor (version, segWit, vin, vout, lockTime, rawBytes, hash, txid, sizeNoWitness, size) {
@@ -55,14 +64,16 @@ class BitcoinTransaction {
     this.sizeNoWitness = sizeNoWitness || size
     this.size = size
 
-    this.weight = this.sizeNoWitness * (WITNESS_SCALE_FACTOR - 1) + this.size
-    this.vsize = Math.floor((this.weight + WITNESS_SCALE_FACTOR - 1) / WITNESS_SCALE_FACTOR)
+    this._calculateWeightAndVsize()
   }
 
-  /**
-   * Convert to a serializable form that has nice stringified hashes and other simplified forms. May be
-   * useful for simplified inspection.
-   */
+  _calculateWeightAndVsize () {
+    if (this.sizeNoWitness && this.size) {
+      this.weight = this.sizeNoWitness * (WITNESS_SCALE_FACTOR - 1) + this.size
+      this.vsize = Math.floor((this.weight + WITNESS_SCALE_FACTOR - 1) / WITNESS_SCALE_FACTOR)
+    }
+  }
+
   toJSON () {
     const coinbase = this.isCoinbase()
     const obj = {
@@ -81,13 +92,30 @@ class BitcoinTransaction {
   }
 
   /**
-  * Convert to a serializable form that has nice stringified hashes and other simplified forms. May be
-  * useful for simplified inspection.
+  * Convert to a serializable form that has nice stringified hashes and other simplified forms. May
+  * be useful for simplified inspection.
+  *
+  * The object returned by this method matches the shape of the JSON structure provided by the
+  * `getblock` (or `gettransaction`) RPC call of Bitcoin Core. Performing a `JSON.stringify()` on
+  * this object will yield the same data as the RPC.
+  *
+  * See [block-porcelain.ipldsch](block-porcelain.ipldsch) for a description of the layout of the
+  * object returned from this method.
+  *
+  * @returns {object}
   */
   toPorcelain () {
     return this.toJSON()
   }
 
+  /**
+   * Find the witness commitment index in the vout array. This method should only work on SegWit
+   * _coinbase_ transactions. The vout array is scanned and each `scriptPubKey` field is inspected.
+   * If one is 38 bytes long and begins with `0x6a24aa21a9ed`, this is the witness commitment vout,
+   * and the index of this vout is returned.
+   *
+   * @returns {number}
+   */
   getWitnessCommitmentIndex () {
     if (!this.segWit) {
       return -1
@@ -109,6 +137,14 @@ class BitcoinTransaction {
     return pos
   }
 
+  /**
+   * Get the witness commitment from this transaction. This method should only work on SegWit
+   * _coinbase_ transactions. See {@link BitcoinTransaction#getWitnessCommitmentIndex} for details
+   * on how this is found in the vout array. The leading 6 byte flag is removed from the
+   * `scriptPubKey` of the vout before being returned by this method.
+   *
+   * @returns {Buffer} the witness commitment
+   */
   getWitnessCommitment () {
     const wci = this.getWitnessCommitmentIndex()
     if (wci >= 0) {
@@ -121,6 +157,13 @@ class BitcoinTransaction {
     return null
   }
 
+  /**
+   * Determine if this is the coinbase. This involves checking the vout array, if this array has a
+   * single entry and the `prevout` field is a null hash (`0x00*32`), this is assumed to be the
+   * coinbase.
+   *
+   * @returns {boolean}
+   */
   isCoinbase () {
     return this.vin &&
       this.vin.length === 1 &&
@@ -130,6 +173,55 @@ class BitcoinTransaction {
   }
 }
 
+// from bitcoin-block.js
+
+/**
+ * Encode this transaction into its raw binary form. Assuming you have the complete
+ * transaction data in this instantiated form.
+ *
+ * It is possible to perform a `decode().encode()` round-trip for any given valid
+ * transaction data and produce the same binary output.
+ *
+ * @param {object} args - any encoding args, currently only
+ * `BitcoinTransaction.HASH_NO_WITNESS` is a valid argument, which when provided will
+ * return the transaction encoded _without_ witness data. When encoded without
+ * witness data, the resulting binary data can be double SHA2-256 hashed to produce
+ * the `txid` which is used in the transaction merkle root stored in the header,
+ * while the binary data from a full transaction will produce the `hash` which is
+ * used in the witness merkle and witness commitment.
+ * @name BitcoinTransaction#encode
+ * @method
+ * @returns {Buffer}
+ */
+BitcoinTransaction.prototype.encode = null
+
+/**
+ * Instantiate a `BitcoinTransaction` from porcelain data. This is the inverse of
+ * {@link BitcoinTransaction#toPorcelain}. It does _not_ require the entirety of the porcelain data
+ * as much of it is either duplicate data or derivable from other fields.
+ *
+ * This function is normally called from {@link BitcoinBlock.fromPorcelain} to instantiate the
+ * each element of the `tx` array.
+ *
+ * Fields required to instantiate a transaction are:
+ *
+ * * `version` number
+ * * `locktime` number
+ * * `vin` array of {@link BitcoinTransactionIn} porcelain forms
+ * * `vout` array of {@link BitcoinTransactionIn} porcelain forms
+ *
+ * Some indication of whether this is a SegWit transaction is also required to properly instantiate
+ * a correct BitcoinTransaction. This could be one of:
+ *
+ * * both the `hash` and `txid` fields (these are compared)
+ * * both the `size` and `weight` fields (`weight` is recalculated from size and compared)
+ * * the `height` property (this can only come from the Bitcoin Core RPC as it is chain-context data
+ *   and not derivable from standard block data)
+ *
+ * @function
+ * @param porcelain the porcelain form of a BitcoinTransaction
+ * @returns {BitcoinTransaction}
+ */
 BitcoinTransaction.fromPorcelain = function fromPorcelain (porcelain) {
   if (typeof porcelain !== 'object') {
     throw new TypeError('BitcoinTransaction porcelain must be an object')
@@ -165,7 +257,7 @@ BitcoinTransaction.fromPorcelain = function fromPorcelain (porcelain) {
       }
     }
     if (porcelain.vin[0].coinbase && !vin[0].scriptWitness) {
-      vin[0].scriptWitness = [Buffer.alloc(32)]
+      vin[0].scriptWitness = [Buffer.alloc(32)] // assume default null, good guess, but still a guess
     }
   }
   const vout = porcelain.vout.map(BitcoinTransactionOut.fromPorcelain)
@@ -184,25 +276,31 @@ BitcoinTransaction.fromPorcelain = function fromPorcelain (porcelain) {
   }
   const rawBytes = transaction.encode()
   transaction.rawBytes = rawBytes.toString('hex')
+  transaction.size = rawBytes.length
   transaction.hash = dblSha2256(rawBytes)
   const rawBytesNoWitness = transaction.encode(HASH_NO_WITNESS)
+  transaction.sizeNoWitness = rawBytesNoWitness.length
   transaction.txid = transaction.segWit ? dblSha2256(rawBytesNoWitness) : transaction.hash
-
-  return new BitcoinTransaction(
-    transaction.version,
-    segWit,
-    transaction.vin,
-    transaction.vout,
-    transaction.lockTime,
-    rawBytes,
-    transaction.hash,
-    transaction.txid,
-    rawBytesNoWitness.length,
-    rawBytes.length
-  )
+  transaction._calculateWeightAndVsize()
+  return transaction
 }
 
 BitcoinTransaction.HASH_NO_WITNESS = HASH_NO_WITNESS
+
+// from bitcoin-block.js
+/**
+ * Decode a {@link BitcoinTransaction} from the raw bytes of the transaction.
+ * Normally raw transaction data isn't available in detached form, although the
+ * hex is available in the JSON output provided by the bitcoin cli attached to
+ * each element of the `tx` array. It may also come from the
+ * {@link BitcoinTransaction#encode} method.
+ *
+ * @param {Uint8Array|Buffer} bytes - the raw bytes of the transaction to be decoded.
+ * @name BitcoinTransaction.decode
+ * @returns {BitcoinTransaction}
+ * @function
+ */
+BitcoinTransaction.decode = null
 
 // -------------------------------------------------------------------------------------------------------
 // Custom decoder and encoder descriptors and functions below here, used by ../coding.js

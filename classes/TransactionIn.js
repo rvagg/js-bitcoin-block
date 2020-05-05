@@ -3,12 +3,12 @@ const { scriptToAsmStr } = require('./script')
 const BitcoinOutPoint = require('./OutPoint')
 
 /**
- * A class representation of a Bitcoin TransactionIn, multiple of which are contained within each {@link BitcoinTransaction}.
+ * A class representation of a Bitcoin TransactionIn, multiple of which are contained within each
+ * {@link BitcoinTransaction} in its `vin` array.
  *
- * This class isn't explicitly exported, access it for direct use with `require('bitcoin-block/classes/TransactionIn')`.
- *
- * @property {BitcoinOutPoint} prevout
- * @property {Uint8Array|Buffer} scriptSig - an arbitrary length byte array
+ * @property {BitcoinOutPoint} prevout - details of the transaction and TransactionOut that this
+ * transaction follows from
+ * @property {Uint8Array|Buffer} scriptSig - an arbitrary length byte array with signature data
  * @property {number} sequence
  * @class
  */
@@ -29,12 +29,6 @@ class BitcoinTransactionIn {
     this.sequence = sequence
   }
 
-  /**
-   * Convert to a serializable form that has nice stringified hashes and other simplified forms. May be
-   * useful for simplified inspection.
-   *
-   * The serailizable form converts this object to `{ coinbase: scriptSig, sequence: sequence }` to match the Bitcoin API output.
-   */
   toJSON (_, coinbase) {
     let obj
     if (coinbase) {
@@ -62,14 +56,51 @@ class BitcoinTransactionIn {
   }
 
   /**
-  * Convert to a serializable form that has nice stringified hashes and other simplified forms. May be
-  * useful for simplified inspection.
+  * Convert to a serializable form that has nice stringified hashes and other simplified forms. May
+  * be useful for simplified inspection.
+  *
+  * The object returned by this method matches the shape of the JSON structure provided by the
+  * `getblock` (or `gettransaction`) RPC call of Bitcoin Core. Performing a `JSON.stringify()` on
+  * this object will yield the same data as the RPC.
+  *
+  * See [block-porcelain.ipldsch](block-porcelain.ipldsch) for a description of the layout of the
+  * object returned from this method.
+  *
+  * @returns {object}
   */
   toPorcelain () {
     return this.toJSON()
   }
 }
 
+/**
+ * Instantiate a `BitcoinTransactionIn` from porcelain data. This is the inverse of
+ * {@link BitcoinTransactionIn#toPorcelain}.
+ *
+ * This function is normally called from {@link BitcoinTransaction.fromPorcelain} to instantiate the
+ * each element of the `vin` array.
+ *
+ * Fields required to instantiate a transaction are:
+ *
+ * * `sequence` number
+ * * `txinwitness` hex string - optional, but should be provided if available to form the correct
+ *   TransactionIn.
+ *
+ * Then, if this TransactionIn is attached to the coinbase:
+ *
+ * * `coinbase` hex string
+ *
+ * _Otherwise_:
+ *
+ * * `txid` number - the linked previous transactionid
+ * * `vout` number - the vout index in the previous transaction
+ * * `scriptSig` object:
+ *   - `scriptSig.hex` hex string - the raw scriptSig data (the asm isn't used)
+ *
+ * @function
+ * @param porcelain the porcelain form of a BitcoinTransactionIn
+ * @returns {BitcoinTransactionIn}
+ */
 BitcoinTransactionIn.fromPorcelain = function fromPorcelain (porcelain) {
   if (typeof porcelain !== 'object') {
     throw new TypeError('BitcoinTransactionIn porcelain must be an object')

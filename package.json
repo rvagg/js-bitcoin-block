@@ -20,7 +20,7 @@
     "test:browser": "polendina --runner=bare-async --cleanup test/browser.js",
     "test:node": "polendina-node bare-async test/node.js",
     "test": "npm run lint && npm run test:node",
-    "docs": "jsdoc4readme --readme *.js classes/*.js"
+    "docs": "jsdoc4readme --readme bitcoin-block.js classes/class-utils.js classes/Block.js classes/Transaction.js classes/TransactionIn.js classes/TransactionOut.js"
   },
   "author": "Rod <rod@vagg.org> (http://r.va.gg/)",
   "license": "Apache-2.0",

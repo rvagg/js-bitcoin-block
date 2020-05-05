@@ -1,11 +1,76 @@
 const assert = require('assert')
 const multihashing = require('multihashing')
 const RIPEMD160 = require('ripemd160')
-
-const COIN = 100000000
 const WITNESS_SCALE_FACTOR = 4
 const SEGWIT_HEIGHT = 481824
+
+/**
+ * The `COIN` constant is the number of _satoshis_ in 1 BTC, i.e. 100,000,000.
+ * Transaction store values in satoshis so must be divided by `COIN` to find the
+ * amount in BTC.
+ *
+ * @name COIN
+ * @constant
+ */
+const COIN = 100000000
+
+/**
+ * `HASH_NO_WITNESS` is available on {@link BitcoinBlock} and {@link BitcoinTransaction}
+ * and is used as an optional argument to their respective `encode()` methods
+ * to signal that encoded transactions should not include witness data (i.e. their
+ * pre SegWit form and the form used to generate the `txid` and transaction merkle root).
+ *
+ * @name HASH_NO_WITNESS
+ * @constant
+ */
 const HASH_NO_WITNESS = Symbol.for('hash-no-witness')
+
+/**
+ * Takes a hash, in byte form, and returns it as a big-endian uint256 in hex encoded form.
+ * This format is typically used by Bitcoin in its hash identifiers, particularly its
+ * block hashes and transaction identifiers and hashes.
+ *
+ * This method simply reverses the bytes and produces a hex string from the resulting bytes.
+ *
+ * See {@link fromHashHex} for the reverse operation.
+ *
+ * @name toHashHex
+ * @function
+ * @param {Buffer|Uint8Array} hash
+ * @returns {string}
+ */
+function toHashHex (hash) {
+  const rev = Buffer.alloc(hash.length)
+  for (let i = 0; i < hash.length; i++) {
+    rev[hash.length - i - 1] = hash[i]
+  }
+  return rev.toString('hex')
+}
+
+/**
+ * Takes a string containing a big-endian uint256 in hex encoded form and converts it
+ * to a standard byte array.
+ *
+ * This method simply reverses the string and produces a `Buffer` from the hex bytes.
+ *
+ * See {@link toHashHex} for the reverse operation.
+ *
+ * @name fromHashHex
+ * @function
+ * @param {string} hashStr
+ * @returns {Buffer}
+ */
+function fromHashHex (hashStr) {
+  const buf = Buffer.from(hashStr, 'hex')
+  assert(buf.length === 32)
+  const mid = buf.length / 2
+  for (let i = 0; i < mid; i++) {
+    const bi = buf[i]
+    buf[i] = buf[buf.length - i - 1]
+    buf[buf.length - i - 1] = bi
+  }
+  return buf
+}
 
 function decodeProperties (propertiesDescriptor) {
   return propertiesDescriptor
@@ -18,26 +83,6 @@ function decodeProperties (propertiesDescriptor) {
       const name = ls > -1 ? p.substring(ls + 1).replace(/;$/, '') : p
       return { type, name }
     })
-}
-
-function toHashHex (hash) {
-  const rev = Buffer.alloc(hash.length)
-  for (let i = 0; i < hash.length; i++) {
-    rev[hash.length - i - 1] = hash[i]
-  }
-  return rev.toString('hex')
-}
-
-function fromHashHex (hash) {
-  const buf = Buffer.from(hash, 'hex')
-  assert(buf.length === 32)
-  const mid = buf.length / 2
-  for (let i = 0; i < mid; i++) {
-    const bi = buf[i]
-    buf[i] = buf[buf.length - i - 1]
-    buf[buf.length - i - 1] = bi
-  }
-  return buf
 }
 
 function dblSha2256 (bytes) {
