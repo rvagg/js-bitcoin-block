@@ -1,5 +1,7 @@
 # bitcoin-block: A Bitcoin block interface for JavaScript
 
+![CI](https://github.com/rvagg/js-bitcoin-block/workflows/CI/badge.svg?branch=master)
+
 **bitcoin-block** implements the basic block primitives: `BitcoinBlock`, `BitcoinTransaction`, `BitcoinTransactionIn`, `BitcoinTransactionOut` and `BitcoinOutPoint`. These primitives are able to decode raw block binary form and present the same data available via the Bitcoin Core RPC (and via the `bitcoin-cli` utility) and many online block explorers minus contextual chain data that is not available in individual blocks (e.g. height, confirmations, next block). These primitives can also re-encode binary block form given the minimum required block and data.
 
 Transactions are SegWit-aware and can decode and re-encode both full and no-witness forms and their associated merkle trees: including the standard no-witness transaction merkle tree found in the block header and the full witness transaction data merkle plus the witness confirmation hash.
