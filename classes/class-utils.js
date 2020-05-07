@@ -85,6 +85,14 @@ function decodeProperties (propertiesDescriptor) {
     })
 }
 
+/**
+ * Perform a standard Bitcoin double SHA2-256 hash on a binary blob.
+ * SHA2-256(SHA2-256(bytes))
+ *
+ * @param {Uint8Array|Buffer} bytes a Buffer or Uint8Array
+ * @returns {Buffer} a 32-byte digest
+ * @function
+ */
 function dblSha2256 (bytes) {
   let digest = multihashing.digest(bytes, 'sha2-256')
   digest = multihashing.digest(digest, 'sha2-256')

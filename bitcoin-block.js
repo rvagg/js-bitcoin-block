@@ -4,7 +4,7 @@ const BitcoinTransactionIn = require('./classes/TransactionIn')
 const BitcoinTransactionOut = require('./classes/TransactionOut')
 const BitcoinOutPoint = require('./classes/OutPoint')
 const coding = require('./coding')(require('./classes/'))
-const { toHashHex, fromHashHex, COIN } = require('./classes/class-utils')
+const { toHashHex, fromHashHex, COIN, dblSha2256 } = require('./classes/class-utils')
 
 BitcoinBlock.decode = function decodeBlock (buf) {
   return coding.decodeType(buf, 'CBlockHeader')
@@ -39,3 +39,4 @@ module.exports.BitcoinOutPoint = BitcoinOutPoint
 module.exports.toHashHex = toHashHex
 module.exports.fromHashHex = fromHashHex
 module.exports.COIN = COIN
+module.exports.dblSha2256 = dblSha2256

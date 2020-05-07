@@ -119,6 +119,7 @@ Only the non-redundant parts of a porcelain form of the objects are required to 
  * [`HASH_NO_WITNESS`](#HASH_NO_WITNESS)
  * [`toHashHex(hash)`](#toHashHex)
  * [`fromHashHex(hashStr)`](#fromHashHex)
+ * [`dblSha2256(bytes)`](#dblSha2256)
  * [`class BitcoinBlock`](#BitcoinBlock)
    * [Constructor: `BitcoinBlock()`](#BitcoinBlock_new)
  * [`class BitcoinBlock`](#BitcoinBlock)
@@ -200,6 +201,18 @@ See [`toHashHex`](#toHashHex) for the reverse operation.
 * **`hashStr`** _(`string`)_
 
 **Return value**  _(`Buffer`)_
+
+<a name="dblSha2256"></a>
+### `dblSha2256(bytes)`
+
+Perform a standard Bitcoin double SHA2-256 hash on a binary blob.
+SHA2-256(SHA2-256(bytes))
+
+**Parameters:**
+
+* **`bytes`** _(`Uint8Array|Buffer`)_: a Buffer or Uint8Array
+
+**Return value**  _(`Buffer`)_: a 32-byte digest
 
 <a name="BitcoinBlock"></a>
 ### `class BitcoinBlock`
