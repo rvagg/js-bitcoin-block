@@ -22,6 +22,9 @@
     "test": "npm run lint && npm run test:node",
     "docs": "jsdoc4readme --readme bitcoin-block.js classes/class-utils.js classes/Block.js classes/Transaction.js classes/TransactionIn.js classes/TransactionOut.js"
   },
+  "bin": {
+    "js-bitcoin-block": "./bin.js"
+  },
   "author": "Rod <rod@vagg.org> (http://r.va.gg/)",
   "license": "Apache-2.0",
   "repository": {
