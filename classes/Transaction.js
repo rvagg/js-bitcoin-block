@@ -420,6 +420,12 @@ BitcoinTransaction._customDecodeSize = function (decoder, properties, state) {
   const start = state.transactionStartPos
   const end = decoder.currentPosition()
   properties.push(end - start)
+  /* debugging data for generating test fixtures focused on transactions
+  const hash = properties[properties.length - 4]
+  let hashNoWitness = properties[properties.length - 3]
+  hashNoWitness = hashNoWitness ? `'${hashNoWitness.toString('hex')}'` : 'null'
+  require('fs').appendFileSync('tx.log', `  ['${hash.toString('hex')}', ${hashNoWitness}, ${start}, ${end}],\n`, 'utf8')
+  */
 }
 
 module.exports = BitcoinTransaction
