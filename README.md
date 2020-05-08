@@ -120,6 +120,8 @@ Only the non-redundant parts of a porcelain form of the objects are required to 
  * [`toHashHex(hash)`](#toHashHex)
  * [`fromHashHex(hashStr)`](#fromHashHex)
  * [`dblSha2256(bytes)`](#dblSha2256)
+ * [`merkleRoot(hashes)`](#merkleRoot)
+ * [`merkle(hashes)`](#merkle)
  * [`class BitcoinBlock`](#BitcoinBlock)
    * [Constructor: `BitcoinBlock()`](#BitcoinBlock_new)
  * [`class BitcoinBlock`](#BitcoinBlock)
@@ -213,6 +215,38 @@ SHA2-256(SHA2-256(bytes))
 * **`bytes`** _(`Uint8Array|Buffer`)_: a Buffer or Uint8Array
 
 **Return value**  _(`Buffer`)_: a 32-byte digest
+
+<a name="merkleRoot"></a>
+### `merkleRoot(hashes)`
+
+Generate a merkle root using [`dblSha2256`](#dblSha2256) on each node. The merkle tree uses Bitcoin's
+algorithm whereby a level with an odd number of nodes has the last node duplicated.
+
+**Parameters:**
+
+* **`hashes`** _(`Array.<(Uint8Array|Buffer)>`)_
+
+**Return value**  _(`Bufer`)_: the merkle root hash
+
+<a name="merkle"></a>
+### `merkle(hashes)`
+
+Generate a merkle tree using [`dblSha2256`](#dblSha2256) on each node. The merkle tree uses Bitcoin's
+algorithm whereby a level with an odd number of nodes has the last node duplicated.
+
+This generator function will `yield` `{ hash, data }` elements for each node of the merkle
+tree where `data` is a two-element array containing hash `Buffer`s of the previous level
+and `hash` is a `Buffer` containing the hash of those concatenated hashes.
+
+It is possible for a result to _not_ contain a `data` element if the input hashes array
+contains only one element, in this case, that single element will be the merkle root and
+the only result yielded, as `{ hash }`.
+
+The final yielded result is the merkle root.
+
+**Parameters:**
+
+* **`hashes`** _(`Array.<(Uint8Array|Buffer)>`)_
 
 <a name="BitcoinBlock"></a>
 ### `class BitcoinBlock`

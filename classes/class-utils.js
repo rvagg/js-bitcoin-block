@@ -107,8 +107,48 @@ function hash160 (bytes) { // bitcoin ripemd-160(sha2-256(bytes))
   return ripemd160(multihashing.digest(bytes, 'sha2-256'))
 }
 
+/**
+ * Generate a merkle root using {@link dblSha2256} on each node. The merkle tree uses Bitcoin's
+ * algorithm whereby a level with an odd number of nodes has the last node duplicated.
+ *
+ * @param {Array<Uint8Array|Buffer>} hashes
+ * @returns {Bufer} the merkle root hash
+ * @function
+ */
 function merkleRoot (hashes) {
+  let last
+  for (last of merkle(hashes)) {}
+  return last.hash
+}
+
+/**
+ * Generate a merkle tree using {@link dblSha2256} on each node. The merkle tree uses Bitcoin's
+ * algorithm whereby a level with an odd number of nodes has the last node duplicated.
+ *
+ * This generator function will `yield` `{ hash, data }` elements for each node of the merkle
+ * tree where `data` is a two-element array containing hash `Buffer`s of the previous level
+ * and `hash` is a `Buffer` containing the hash of those concatenated hashes.
+ *
+ * It is possible for a result to _not_ contain a `data` element if the input hashes array
+ * contains only one element, in this case, that single element will be the merkle root and
+ * the only result yielded, as `{ hash }`.
+ *
+ * The final yielded result is the merkle root.
+ *
+ * @param {Array<Uint8Array|Buffer>} hashes
+ * @yields {object} `{ hash, data }` where `data` is an array of two hashes
+ * @generator
+ * @function
+ */
+function * merkle (hashes) {
   hashes = hashes.slice()
+
+  if (hashes.length === 1) {
+    yield { hash: hashes[0] }
+    return
+  } else if (hashes.length === 0) {
+    throw new Error('Hash array must have at least one element')
+  }
 
   while (hashes.length > 1) {
     if (hashes.length & 1) {
@@ -116,12 +156,13 @@ function merkleRoot (hashes) {
     }
     const newHashes = []
     for (let i = 0; i < hashes.length; i += 2) {
-      newHashes.push(dblSha2256(Buffer.concat([hashes[i], hashes[i + 1]])))
+      const data = [hashes[i], hashes[i + 1]]
+      const hash = dblSha2256(Buffer.concat(data))
+      yield { hash, data }
+      newHashes.push(hash)
     }
     hashes = newHashes
   }
-
-  return hashes[0]
 }
 
 function isHexString (str, len) {
@@ -135,6 +176,7 @@ module.exports.dblSha2256 = dblSha2256
 module.exports.ripemd160 = ripemd160
 module.exports.hash160 = hash160
 module.exports.merkleRoot = merkleRoot
+module.exports.merkle = merkle
 module.exports.isHexString = isHexString
 module.exports.COIN = COIN
 module.exports.WITNESS_SCALE_FACTOR = WITNESS_SCALE_FACTOR
