@@ -220,6 +220,32 @@ class BitcoinTransaction {
 BitcoinTransaction.prototype.encode = null
 
 /**
+ * Check if the porcelain form of a transaction is has witness data and is therefore
+ * post-SegWit.
+ *
+ * @function
+ * @param {object} porcelain form of a transaction
+ * @returns {boolean}
+ */
+BitcoinTransaction.isPorcelainSegWit = function isPorcelainSegWit (porcelain) {
+  if (typeof porcelain !== 'object') {
+    return false
+  }
+  let segWit = false
+  if (typeof porcelain.hash === 'string' &&
+      isHexString(porcelain.hash, 64) &&
+      typeof porcelain.txid === 'string' &&
+      isHexString(porcelain.txid, 64)) {
+    segWit = porcelain.hash !== porcelain.txid
+  } else if (typeof porcelain.size === 'number' && typeof porcelain.weight === 'number') {
+    segWit = porcelain.weight !== porcelain.size * (WITNESS_SCALE_FACTOR - 1) + porcelain.size
+  } else if (typeof porcelain.height === 'number') {
+    segWit = porcelain.height >= SEGWIT_HEIGHT
+  }
+  return segWit
+}
+
+/**
  * Instantiate a `BitcoinTransaction` from porcelain data. This is the inverse of
  * {@link BitcoinTransaction#toPorcelain}. It does _not_ require the entirety of the porcelain data
  * as much of it is either duplicate data or derivable from other fields.
@@ -263,14 +289,7 @@ BitcoinTransaction.fromPorcelain = function fromPorcelain (porcelain) {
     throw new TypeError('vin property must be an array')
   }
 
-  let segWit = false
-  if (typeof porcelain.hash === 'string' && isHexString(porcelain.hash, 64) && typeof porcelain.txid === 'string' && isHexString(porcelain.txid, 64)) {
-    segWit = porcelain.hash !== porcelain.txid
-  } else if (typeof porcelain.size === 'number' && typeof porcelain.weight === 'number') {
-    segWit = porcelain.weight !== porcelain.size * (WITNESS_SCALE_FACTOR - 1) + porcelain.size
-  } else if (typeof porcelain.height === 'number') {
-    segWit = porcelain.height >= SEGWIT_HEIGHT
-  }
+  const segWit = BitcoinTransaction.isPorcelainSegWit(porcelain)
 
   const vin = porcelain.vin.map(BitcoinTransactionIn.fromPorcelain)
   if (segWit) {

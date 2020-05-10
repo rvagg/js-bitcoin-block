@@ -147,6 +147,7 @@ Only the non-redundant parts of a porcelain form of the objects are required to 
  * [`BitcoinTransaction#getWitnessCommitmentNonce()`](#BitcoinTransaction_getWitnessCommitmentNonce)
  * [`BitcoinTransaction#isCoinbase()`](#BitcoinTransaction_isCoinbase)
  * [`BitcoinTransaction#encode(args)`](#BitcoinTransaction_encode)
+ * [`BitcoinTransaction.isPorcelainSegWit(porcelain)`](#BitcoinTransaction__isPorcelainSegWit)
  * [`BitcoinTransaction.fromPorcelain(porcelain)`](#BitcoinTransaction__fromPorcelain)
  * [`BitcoinTransaction.decode(bytes)`](#BitcoinTransaction__decode)
  * [`class BitcoinTransactionIn`](#BitcoinTransactionIn)
@@ -598,6 +599,18 @@ transaction data and produce the same binary output.
   used in the witness merkle and witness commitment.
 
 **Return value**  _(`Buffer`)_
+
+<a name="BitcoinTransaction__isPorcelainSegWit"></a>
+### `BitcoinTransaction.isPorcelainSegWit(porcelain)`
+
+Check if the porcelain form of a transaction is has witness data and is therefore
+post-SegWit.
+
+**Parameters:**
+
+* **`porcelain`** _(`object`)_: form of a transaction
+
+**Return value**  _(`boolean`)_
 
 <a name="BitcoinTransaction__fromPorcelain"></a>
 ### `BitcoinTransaction.fromPorcelain(porcelain)`
