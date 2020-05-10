@@ -130,6 +130,7 @@ Only the non-redundant parts of a porcelain form of the objects are required to 
  * [`BitcoinBlock#calculateMerkleRoot(noWitness)`](#BitcoinBlock_calculateMerkleRoot)
  * [`BitcoinBlock#calculateWitnessCommitment()`](#BitcoinBlock_calculateWitnessCommitment)
  * [`BitcoinBlock#getWitnessCommitment()`](#BitcoinBlock_getWitnessCommitment)
+ * [`BitcoinBlock#getWitnessCommitmentNonce()`](#BitcoinBlock_getWitnessCommitmentNonce)
  * [`BitcoinBlock#isSegWit()`](#BitcoinBlock_isSegWit)
  * [`BitcoinBlock#encode(args)`](#BitcoinBlock_encode)
  * [`BitcoinBlock.HASH_NO_WITNESS`](#BitcoinBlock__HASH_NO_WITNESS)
@@ -143,6 +144,7 @@ Only the non-redundant parts of a porcelain form of the objects are required to 
  * [`BitcoinTransaction#toPorcelain()`](#BitcoinTransaction_toPorcelain)
  * [`BitcoinTransaction#getWitnessCommitmentIndex()`](#BitcoinTransaction_getWitnessCommitmentIndex)
  * [`BitcoinTransaction#getWitnessCommitment()`](#BitcoinTransaction_getWitnessCommitment)
+ * [`BitcoinTransaction#getWitnessCommitmentNonce()`](#BitcoinTransaction_getWitnessCommitmentNonce)
  * [`BitcoinTransaction#isCoinbase()`](#BitcoinTransaction_isCoinbase)
  * [`BitcoinTransaction#encode(args)`](#BitcoinTransaction_encode)
  * [`BitcoinTransaction.fromPorcelain(porcelain)`](#BitcoinTransaction__fromPorcelain)
@@ -338,6 +340,8 @@ alone.
 * **`noWitness`** _(`Symbol`)_: calculate the merkle root without witness data (i.e. the standard
   block header `merkleroot` value). Supply `HASH_NO_WITNESS` to activate.
 
+**Return value**  _(`Buffer`)_: the merkle root
+
 <a name="BitcoinBlock_calculateWitnessCommitment"></a>
 ### `BitcoinBlock#calculateWitnessCommitment()`
 
@@ -348,12 +352,29 @@ This method assumes this object has transactions attached to it and is not the h
 alone. It also assumes a valid witness nonce stored in the single element of the
 `scriptWitness` in the coinbase's single vin.
 
+**Return value**  _(`Buffer`)_: the witness commitment
+
 <a name="BitcoinBlock_getWitnessCommitment"></a>
 ### `BitcoinBlock#getWitnessCommitment()`
 
 **Get** the witness commitment as decoded from the block data. This is a shortcut method that
-reaches assumes transaction data is associated with this block and reaches into the coinbase
-and finds the witness commitment within one of the vout elements.
+assumes transaction data is associated with this block and reaches into the coinbase and finds
+the witness commitment within one of the vout elements.
+
+See [`BitcoinTransaction#getWitnessCommitment()`](#BitcoinTransaction_getWitnessCommitment____)
+
+**Return value**  _(`Buffer`)_: the witness commitment
+
+<a name="BitcoinBlock_getWitnessCommitmentNonce"></a>
+### `BitcoinBlock#getWitnessCommitmentNonce()`
+
+Get the witness commitment nonce from the scriptWitness in the coinbase. This is a shortcut
+that assumes transaction data (with witness data) is associated with this block and reaches
+into the coinbase to find the nonce in the scriptWitness.
+
+See [`BitcoinTransaction#getWitnessCommitmentNonce()`](#BitcoinTransaction_getWitnessCommitmentNonce____)
+
+**Return value**  _(`Buffer`)_: the witness commitment nonce
 
 <a name="BitcoinBlock_isSegWit"></a>
 ### `BitcoinBlock#isSegWit()`
@@ -361,6 +382,8 @@ and finds the witness commitment within one of the vout elements.
 Does this block contain SegWit (BIP141) transactions. This method assumes this block has
 transaction data associated with it as it checks whether those transactions were encoded
 as SegWit.
+
+**Return value**  _(`boolean`)_
 
 <a name="BitcoinBlock_encode"></a>
 ### `BitcoinBlock#encode(args)`
@@ -529,6 +552,20 @@ Get the witness commitment from this transaction. This method should only work o
 _coinbase_ transactions. See [`BitcoinTransaction#getWitnessCommitmentIndex`](#BitcoinTransaction_getWitnessCommitmentIndex) for details
 on how this is found in the vout array. The leading 6 byte flag is removed from the
 `scriptPubKey` of the vout before being returned by this method.
+
+**Return value**  _(`Buffer`)_: the witness commitment
+
+<a name="BitcoinTransaction_getWitnessCommitmentNonce"></a>
+### `BitcoinTransaction#getWitnessCommitmentNonce()`
+
+Get the witness commitment nonce from the scriptWitness in this transaction. This method
+should only work on _coinbase_ transacitons in SegWit blocks where the transaction data
+we're working with has full witness data attached (i.e. not the trimmed no-witness form)
+since the nonce is stored in the scrptWitness.
+
+The scriptWitness of a SegWit coinbase contains a stack with a single 32-byte array which
+is the nonce that combines with the witness merkle root to be hashed together and form the
+witness commitment.
 
 **Return value**  _(`Buffer`)_: the witness commitment
 

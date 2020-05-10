@@ -102,6 +102,7 @@ class BitcoinTransaction {
   * See [block-porcelain.ipldsch](block-porcelain.ipldsch) for a description of the layout of the
   * object returned from this method.
   *
+  * @method
   * @returns {object}
   */
   toPorcelain () {
@@ -114,12 +115,10 @@ class BitcoinTransaction {
    * If one is 38 bytes long and begins with `0x6a24aa21a9ed`, this is the witness commitment vout,
    * and the index of this vout is returned.
    *
+   * @method
    * @returns {number}
    */
   getWitnessCommitmentIndex () {
-    if (!this.segWit) {
-      return -1
-    }
     // src/validation.cpp#GetWitnessCommitmentIndex
     let pos = -1
     for (let i = 0; i < this.vout.length; i++) {
@@ -143,6 +142,7 @@ class BitcoinTransaction {
    * on how this is found in the vout array. The leading 6 byte flag is removed from the
    * `scriptPubKey` of the vout before being returned by this method.
    *
+   * @method
    * @returns {Buffer} the witness commitment
    */
   getWitnessCommitment () {
@@ -155,6 +155,30 @@ class BitcoinTransaction {
       return witnessCommitment
     }
     return null
+  }
+
+  /**
+   * Get the witness commitment nonce from the scriptWitness in this transaction. This method
+   * should only work on _coinbase_ transacitons in SegWit blocks where the transaction data
+   * we're working with has full witness data attached (i.e. not the trimmed no-witness form)
+   * since the nonce is stored in the scrptWitness.
+   *
+   * The scriptWitness of a SegWit coinbase contains a stack with a single 32-byte array which
+   * is the nonce that combines with the witness merkle root to be hashed together and form the
+   * witness commitment.
+   *
+   * @method
+   * @returns {Buffer} the witness commitment
+   */
+  getWitnessCommitmentNonce () {
+    if (!this.isCoinbase() || !this.segWit) {
+      return null
+    }
+    if (!this.vin || this.vin.length !== 1 || !this.vin[0].scriptWitness ||
+        this.vin[0].scriptWitness.length !== 1 || this.vin[0].scriptWitness[0].length !== 32) {
+      return null
+    }
+    return this.vin[0].scriptWitness[0]
   }
 
   /**

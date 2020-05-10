@@ -153,6 +153,7 @@ class BitcoinBlock {
    * See [block-porcelain.ipldsch](block-porcelain.ipldsch) for a description of the layout of the
    * object returned from this method.
    *
+   * @method
    * @returns {object}
    */
   toPorcelain (type) {
@@ -171,8 +172,10 @@ class BitcoinBlock {
    * This method assumes this object has transactions attached to it and is not the header data
    * alone.
    *
+   * @method
    * @param {Symbol} noWitness calculate the merkle root without witness data (i.e. the standard
    * block header `merkleroot` value). Supply `HASH_NO_WITNESS` to activate.
+   * @returns {Buffer} the merkle root
    */
   calculateMerkleRoot (noWitness) {
     if (!this.tx || !this.tx.length) {
@@ -193,6 +196,9 @@ class BitcoinBlock {
    * This method assumes this object has transactions attached to it and is not the header data
    * alone. It also assumes a valid witness nonce stored in the single element of the
    * `scriptWitness` in the coinbase's single vin.
+   *
+   * @method
+   * @returns {Buffer} the witness commitment
    */
   calculateWitnessCommitment () {
     if (!this.tx || !this.tx.length) {
@@ -202,13 +208,7 @@ class BitcoinBlock {
       throw new Error('Cannot calculate witness commitment of non-segwit block')
     }
 
-    // nonce from coinbase vin scriptWitness
-    if (!this.tx[0].vin || this.tx[0].vin.length !== 1 || !this.tx[0].vin[0].scriptWitness ||
-        this.tx[0].vin[0].scriptWitness.length !== 1 ||
-        this.tx[0].vin[0].scriptWitness[0].length !== 32) {
-      throw new Error('Don\'t have a valid witness nonce')
-    }
-    const nonce = this.tx[0].vin[0].scriptWitness[0]
+    const nonce = this.getWitnessCommitmentNonce()
     // full merkle root _with_ witness data but excluding coinbase
     const fullMerkleRoot = this.calculateMerkleRoot()
     const witnessCommitment = dblSha2256(Buffer.concat([fullMerkleRoot, nonce]))
@@ -218,8 +218,13 @@ class BitcoinBlock {
 
   /**
    * **Get** the witness commitment as decoded from the block data. This is a shortcut method that
-   * reaches assumes transaction data is associated with this block and reaches into the coinbase
-   * and finds the witness commitment within one of the vout elements.
+   * assumes transaction data is associated with this block and reaches into the coinbase and finds
+   * the witness commitment within one of the vout elements.
+   *
+   * See {@link BitcoinTransaction#getWitnessCommitment()}
+   *
+   * @method
+   * @returns {Buffer} the witness commitment
    */
   getWitnessCommitment () {
     if (!this.tx || !this.tx.length) {
@@ -229,9 +234,37 @@ class BitcoinBlock {
   }
 
   /**
+   * Get the witness commitment nonce from the scriptWitness in the coinbase. This is a shortcut
+   * that assumes transaction data (with witness data) is associated with this block and reaches
+   * into the coinbase to find the nonce in the scriptWitness.
+   *
+   * See {@link BitcoinTransaction#getWitnessCommitmentNonce()}
+   *
+   * @method
+   * @returns {Buffer} the witness commitment nonce
+   */
+  getWitnessCommitmentNonce () {
+    if (!this.tx || !this.tx.length) {
+      throw new Error('Cannot calculate witness commitment without transactions')
+    }
+    if (!this.isSegWit()) {
+      throw new Error('Cannot calculate witness commitment of non-segwit block')
+    }
+
+    const nonce = this.tx[0].getWitnessCommitmentNonce()
+    if (!nonce) {
+      throw new Error('Don\'t have a valid witness nonce')
+    }
+    return nonce
+  }
+
+  /**
    * Does this block contain SegWit (BIP141) transactions. This method assumes this block has
    * transaction data associated with it as it checks whether those transactions were encoded
    * as SegWit.
+   *
+   * @method
+   * @returns {boolean}
    */
   isSegWit () {
     if (!this.tx || !this.tx.length) {
