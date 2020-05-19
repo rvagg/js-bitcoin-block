@@ -339,6 +339,10 @@ BitcoinTransaction.HASH_NO_WITNESS = HASH_NO_WITNESS
  * {@link BitcoinTransaction#encode} method.
  *
  * @param {Uint8Array|Buffer} bytes - the raw bytes of the transaction to be decoded.
+ * @param {boolean} strictLengthUsage - ensure that all bytes were consumed during decode.
+ * This is useful when ensuring that bytes have been properly decoded where there is
+ * uncertainty about whether the bytes represent a Transaction or not. Switch to `true`
+ * to be sure.
  * @name BitcoinTransaction.decode
  * @returns {BitcoinTransaction}
  * @function

@@ -6,12 +6,12 @@ const BitcoinOutPoint = require('./classes/OutPoint')
 const coding = require('./coding')(require('./classes/'))
 const { toHashHex, fromHashHex, COIN, dblSha2256, merkle, merkleRoot } = require('./classes/class-utils')
 
-BitcoinBlock.decode = function decodeBlock (buf) {
-  return coding.decodeType(buf, 'CBlockHeader')
+BitcoinBlock.decode = function decodeBlock (buf, strictLengthUsage) {
+  return coding.decodeType(buf, 'CBlockHeader', strictLengthUsage)
 }
 
-BitcoinBlock.decodeHeaderOnly = function decodeBlockHeaderOnly (buf) {
-  return coding.decodeType(buf, 'CBlockHeader__Only')
+BitcoinBlock.decodeHeaderOnly = function decodeBlockHeaderOnly (buf, strictLengthUsage) {
+  return coding.decodeType(buf, 'CBlockHeader__Only', strictLengthUsage)
 }
 
 BitcoinBlock.prototype.encode = function (...args) {
@@ -22,8 +22,8 @@ BitcoinBlock.BitcoinBlockHeaderOnly.prototype.encode = function (...args) {
   return Buffer.concat([...coding.encodeType(this, args)])
 }
 
-BitcoinTransaction.decode = function decodeTransaction (buf) {
-  return coding.decodeType(buf, 'CTransaction')
+BitcoinTransaction.decode = function decodeTransaction (buf, strictLengthUsage) {
+  return coding.decodeType(buf, 'CTransaction', strictLengthUsage)
 }
 
 BitcoinTransaction.prototype.encode = function (...args) {

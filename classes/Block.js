@@ -480,6 +480,10 @@ module.exports.BitcoinBlockHeaderOnly = BitcoinBlockHeaderOnly
  * to parse just the 80-byte header data.
  *
  * @param {Uint8Array|Buffer} bytes - the raw bytes of the block to be decoded.
+ * @param {boolean} strictLengthUsage - ensure that all bytes were consumed during decode.
+ * This is useful when ensuring that bytes have been properly decoded where there is
+ * uncertainty about whether the bytes represent a Block or not. Switch to `true` to be
+ * sure.
  * @name BitcoinBlock.decode
  * @function
  * @returns {BitcoinBlock}

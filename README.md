@@ -135,7 +135,7 @@ Only the non-redundant parts of a porcelain form of the objects are required to 
  * [`BitcoinBlock#encode(args)`](#BitcoinBlock_encode)
  * [`BitcoinBlock.HASH_NO_WITNESS`](#BitcoinBlock__HASH_NO_WITNESS)
  * [`BitcoinBlock.fromPorcelain(porcelain)`](#BitcoinBlock__fromPorcelain)
- * [`BitcoinBlock.decode(bytes)`](#BitcoinBlock__decode)
+ * [`BitcoinBlock.decode(bytes, strictLengthUsage)`](#BitcoinBlock__decode)
  * [`BitcoinBlock.decodeBlockHeaderOnly(bytes)`](#BitcoinBlock__decodeBlockHeaderOnly)
  * [`class BitcoinTransaction`](#BitcoinTransaction)
    * [Constructor: `BitcoinTransaction()`](#BitcoinTransaction_new)
@@ -149,7 +149,7 @@ Only the non-redundant parts of a porcelain form of the objects are required to 
  * [`BitcoinTransaction#encode(args)`](#BitcoinTransaction_encode)
  * [`BitcoinTransaction.isPorcelainSegWit(porcelain)`](#BitcoinTransaction__isPorcelainSegWit)
  * [`BitcoinTransaction.fromPorcelain(porcelain)`](#BitcoinTransaction__fromPorcelain)
- * [`BitcoinTransaction.decode(bytes)`](#BitcoinTransaction__decode)
+ * [`BitcoinTransaction.decode(bytes, strictLengthUsage)`](#BitcoinTransaction__decode)
  * [`class BitcoinTransactionIn`](#BitcoinTransactionIn)
    * [Constructor: `BitcoinTransactionIn(prevout, scriptSig, sequence)`](#BitcoinTransactionIn_new)
  * [`BitcoinTransactionIn#toPorcelain()`](#BitcoinTransactionIn_toPorcelain)
@@ -437,7 +437,7 @@ structure.
 **Return value**  _(`BitcoinBlock`)_
 
 <a name="BitcoinBlock__decode"></a>
-### `BitcoinBlock.decode(bytes)`
+### `BitcoinBlock.decode(bytes, strictLengthUsage)`
 
 Decode a [`BitcoinBlock`](#BitcoinBlock) from the raw bytes of the block. Such data
 in hex form is available directly from the bitcoin cli:
@@ -449,6 +449,10 @@ to parse just the 80-byte header data.
 **Parameters:**
 
 * **`bytes`** _(`Uint8Array|Buffer`)_: the raw bytes of the block to be decoded.
+* **`strictLengthUsage`** _(`boolean`)_: ensure that all bytes were consumed during decode.
+  This is useful when ensuring that bytes have been properly decoded where there is
+  uncertainty about whether the bytes represent a Block or not. Switch to `true` to be
+  sure.
 
 **Return value**  _(`BitcoinBlock`)_
 
@@ -644,7 +648,7 @@ a correct BitcoinTransaction. This could be one of:
 **Return value**  _(`BitcoinTransaction`)_
 
 <a name="BitcoinTransaction__decode"></a>
-### `BitcoinTransaction.decode(bytes)`
+### `BitcoinTransaction.decode(bytes, strictLengthUsage)`
 
 Decode a [`BitcoinTransaction`](#BitcoinTransaction) from the raw bytes of the transaction.
 Normally raw transaction data isn't available in detached form, although the
@@ -655,6 +659,10 @@ each element of the `tx` array. It may also come from the
 **Parameters:**
 
 * **`bytes`** _(`Uint8Array|Buffer`)_: the raw bytes of the transaction to be decoded.
+* **`strictLengthUsage`** _(`boolean`)_: ensure that all bytes were consumed during decode.
+  This is useful when ensuring that bytes have been properly decoded where there is
+  uncertainty about whether the bytes represent a Transaction or not. Switch to `true`
+  to be sure.
 
 **Return value**  _(`BitcoinTransaction`)_
 

@@ -197,7 +197,7 @@ function test (hash, block, expected) {
   // verify _only_ the first 80 bytes and that we can parse basic data
   verifyHeader(block, expected)
 
-  const decoded = BitcoinBlock.decode(block) // decode full block
+  const decoded = BitcoinBlock.decode(block, true) // decode full block, strict length consumption
 
   // ---------------------------------------------------------------------------
   // test the serialized minimum form, where the `tx` array is just the txids

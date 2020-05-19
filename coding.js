@@ -206,7 +206,7 @@ function isArrayType (typ) {
   return arrayDesc
 }
 
-function decodeType (buf, type) {
+function decodeType (buf, type, strictLengthUsage) {
   let pos = 0
   const state = {}
 
@@ -413,6 +413,9 @@ function decodeType (buf, type) {
   }
 
   const block = decoder.readType(type)
+  if (strictLengthUsage && pos !== buf.length) {
+    throw new Error('decode did not consume all available bytes as expected')
+  }
   return block
 }
 
