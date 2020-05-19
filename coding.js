@@ -206,9 +206,24 @@ function isArrayType (typ) {
   return arrayDesc
 }
 
+function assertSize (actual, expected) {
+  if (actual < expected) {
+    throw new Error(`decode expected to read ${expected} bytes but only ${actual} where available`)
+  }
+}
+
+function sizeAsserted (read, expected) {
+  assertSize(read.length, expected)
+  return read
+}
+
 function decodeType (buf, type, strictLengthUsage) {
   let pos = 0
   const state = {}
+
+  function assertAvailable (want) {
+    assertSize(buf.length - pos, want)
+  }
 
   const decoder = {
     currentPosition () {
@@ -252,6 +267,7 @@ function decodeType (buf, type, strictLengthUsage) {
       pos += 8
       */
       // more manual version
+      assertAvailable(8)
       const hi = buf[pos + 4] +
         buf[pos + 5] * 2 ** 8 +
         buf[pos + 6] * 2 ** 16 +
@@ -267,15 +283,15 @@ function decodeType (buf, type, strictLengthUsage) {
     },
 
     peek (len) {
-      return buf.slice(pos, pos + len)
+      return sizeAsserted(buf.slice(pos, pos + len), len)
     },
 
     slice (len) {
-      return buf.slice(pos, pos += len) // eslint-disable-line
+      return sizeAsserted(buf.slice(pos, pos += len), len) // eslint-disable-line
     },
 
     absoluteSlice (start, len) {
-      return buf.slice(start, start + len)
+      return sizeAsserted(buf.slice(start, start + len), len)
     },
 
     readHash () {
