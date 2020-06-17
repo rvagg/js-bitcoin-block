@@ -248,7 +248,6 @@ function decodeType (buf, type, strictLengthUsage) {
       return i
     },
 
-    // NOTE: this is actually a uint, if you need signed then you may be in trouble
     readBigInt64LE () {
       // not browser friendly, need to simulate:
       // const i = buf.readBigInt64LE(pos)
@@ -271,8 +270,7 @@ function decodeType (buf, type, strictLengthUsage) {
       const hi = buf[pos + 4] +
         buf[pos + 5] * 2 ** 8 +
         buf[pos + 6] * 2 ** 16 +
-        buf[pos + 7] * 2 ** 24
-      // uint might &0x7f the first and then check the &0x80 bit for signedness
+        (buf[pos + 7] << 24) // possible overflow
       const lo = buf[pos] +
         buf[pos + 1] * 2 ** 8 +
         buf[pos + 2] * 2 ** 16 +
