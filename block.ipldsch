@@ -71,18 +71,19 @@ type TxOut struct {
   scriptPubKey MaybePubKey # unbounded vec<char>
 }
 
-# A faux kinded union, this field is only a WitnessTransactionMerkle hash for
+# A faux kinded union, this field is only a WitnessCommitment hash for
 # SegWit transactions with one of the coinbase TxOuts where the field starts
-# with the bytes [0xaa, 0x21, 0xa9, 0xed], the remainder is taken to be the
-# txWitnessMerkleRoot. Otherwise the field can be interpreted as a scriptPubKey
+# with the bytes [0x6a, 0x24, 0xaa, 0x21, 0xa9, 0xed], the remainder is taken to
+# be the txWitnessMerkleRoot. Otherwise the field can be interpreted as a
+# scriptPubKey
 type MaybePubKey union {
-  | ScriptPubKey string
-  | &WitnessTransactionMerkle link
+  | ScriptPubKey bytes
+  | &WitnessCommitment link
 } representation kinded
 
-type ScriptPubKey string
+type ScriptPubKey bytes
 
-type WitnessTransactionMerkle struct {
+type WitnessCommitment struct {
   nonce Bytes # 256-bits, attached to the coinbase TxIn as its scriptWitness
   txWitnessMerkleRoot &TransactionMerkle
 }
