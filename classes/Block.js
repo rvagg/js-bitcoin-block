@@ -349,6 +349,9 @@ BitcoinBlock.fromPorcelain = function fromPorcelain (porcelain) {
   if (typeof porcelain.time !== 'number') {
     throw new TypeError('time property must be a number')
   }
+  if (typeof porcelain.nonce !== 'number') {
+    throw new TypeError('nonce property must be a number')
+  }
   if (typeof porcelain.bits !== 'string' && !/^[0-9a-f]+$/.test(porcelain.bits)) {
     throw new TypeError('bits property must be a hex string')
   }
