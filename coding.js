@@ -96,8 +96,8 @@ const encoders = {
     lo = lo >> 8
     buf[3] = lo
     let hi = (v / (2 ** 32)) & 0xffffffff
-    if (hi === 0 && v < 0) {
-      hi = -1
+    if (v < 0) {
+      hi -= 1
     }
     buf[4] = hi
     hi = hi >> 8
@@ -128,11 +128,13 @@ function * encoder (typ, value, args) {
   if (typ === 'std::vector<unsigned char>' || typ === 'CScript') {
     // different forms of variable size byte slices
     typ = 'compactSlice'
-  } else if (typ === 'libzcash::GrothProof'
-      || typ === 'spend_auth_sig_t'
-      || typ === 'libzcash::SaplingEncCiphertext'
-      || typ === 'libzcash::SaplingOutCiphertext'
-      || typ === 'binding_sig_t') {
+  } else if (typ === 'libzcash::GrothProof' ||
+      typ === 'spend_auth_sig_t' ||
+      typ === 'libzcash::SaplingEncCiphertext' ||
+      typ === 'libzcash::SaplingOutCiphertext' ||
+      typ === 'binding_sig_t' ||
+      typ === 'ZCNoteEncryption::Ciphertext' ||
+      typ === 'joinsplit_sig_t') {
     // different forms of fixed size byte slices
     typ = 'slice'
   } else if (typ === 'CAmount') {
@@ -140,6 +142,7 @@ function * encoder (typ, value, args) {
   }
 
   const vectorType = isVectorType(typ)
+  const arrayDesc = !vectorType && isArrayType(typ)
 
   if (vectorType) {
     const arr = value
@@ -152,6 +155,19 @@ function * encoder (typ, value, args) {
     yield writeCompactSize(arr.length)
     for (const v of arr) {
       yield * encoder(vectorType, v, args)
+    }
+  } else if (arrayDesc) {
+    const arraySize = parseInt(arrayDesc[2], 10)
+    const arrayType = arrayDesc[1]
+    const arr = value
+    if (!Array.isArray(arr)) {
+      throw new Error(`Encoding std::array (${typ}) requires an array`)
+    }
+    if (arr.length !== arraySize) {
+      throw new Error(`Encoding std::array (${typ}) requires an array of length ${arraySize}, got ${arr.length}`)
+    }
+    for (const v of arr) {
+      yield * encoder(arrayType, v, args)
     }
   } else if (encoders[typ]) {
     yield * encoders[typ](value)
