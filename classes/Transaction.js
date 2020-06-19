@@ -425,9 +425,7 @@ BitcoinTransaction._customDecodeBytes = function (decoder, properties, state) {
 }
 
 BitcoinTransaction._customDecodeHash = function (decoder, properties, state) {
-  const start = state.transactionStartPos
-  const end = decoder.currentPosition()
-  const hashBytes = decoder.absoluteSlice(start, end - start)
+  const hashBytes = properties[properties.length - 1] // rawBytes
   const digest = dblSha2256(hashBytes)
   properties.push(digest)
 }
