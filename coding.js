@@ -96,6 +96,9 @@ const encoders = {
     lo = lo >> 8
     buf[3] = lo
     let hi = (v / (2 ** 32)) & 0xffffffff
+    if (hi === 0 && v < 0) {
+      hi = -1
+    }
     buf[4] = hi
     hi = hi >> 8
     buf[5] = hi
@@ -107,14 +110,31 @@ const encoders = {
       console.log(`int64_t: ${buf.toString('hex')}`)
     }
     yield buf
+  },
+
+  slice: function * writeSlice (v) {
+    if (!Buffer.isBuffer(v)) {
+      throw new Error('Encoding slice requires a "Buffer" type')
+    }
+    if (module.exports.DEBUG) {
+      console.log(`slice: ${v.toString('hex')}`)
+    }
+    yield v
   }
 }
 
 function * encoder (typ, value, args) {
   // aliases
   if (typ === 'std::vector<unsigned char>' || typ === 'CScript') {
-    // different forms of byte slices
+    // different forms of variable size byte slices
     typ = 'compactSlice'
+  } else if (typ === 'libzcash::GrothProof'
+      || typ === 'spend_auth_sig_t'
+      || typ === 'libzcash::SaplingEncCiphertext'
+      || typ === 'libzcash::SaplingOutCiphertext'
+      || typ === 'binding_sig_t') {
+    // different forms of fixed size byte slices
+    typ = 'slice'
   } else if (typ === 'CAmount') {
     typ = 'int64_t'
   }

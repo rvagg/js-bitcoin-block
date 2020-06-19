@@ -5,7 +5,7 @@
   "main": "bitcoin-block.js",
   "dependencies": {
     "bech32": "^1.1.4",
-    "multibase": "^0.7.0",
+    "multibase": "^1.0.0",
     "multihashing": "^0.3.3",
     "ripemd160": "^2.0.2"
   },
