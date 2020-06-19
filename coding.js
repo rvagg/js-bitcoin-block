@@ -87,25 +87,18 @@ const encoders = {
 
   int64_t: function * writeBigInt64LE (v) {
     const buf = Buffer.alloc(8)
-    let lo = v & 0xffffffff
-    buf[0] = lo
-    lo = lo >> 8
-    buf[1] = lo
-    lo = lo >> 8
-    buf[2] = lo
-    lo = lo >> 8
-    buf[3] = lo
+    buf[0] = v
+    buf[1] = v >> 8
+    buf[2] = v >> 16
+    buf[3] = v >> 24
     let hi = (v / (2 ** 32)) & 0xffffffff
     if (v < 0) {
       hi -= 1
     }
     buf[4] = hi
-    hi = hi >> 8
-    buf[5] = hi
-    hi = hi >> 8
-    buf[6] = hi
-    hi = hi >> 8
-    buf[7] = hi
+    buf[5] = hi >> 8
+    buf[6] = hi >> 16
+    buf[7] = hi >> 24
     if (module.exports.DEBUG) {
       console.log(`int64_t: ${buf.toString('hex')}`)
     }
