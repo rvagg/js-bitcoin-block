@@ -89,14 +89,16 @@ class BitcoinBlock {
   }
 
   _calculateStrippedSize () {
-    this.strippedsize = this.tx ? ((() => {
-      const txLead = compactSizeSize(this.tx.length)
-      const txSizeNoWitness = this.tx.reduce((p, tx) => {
-        p += tx.sizeNoWitness
-        return p
-      }, 0)
-      return 80 + txLead + txSizeNoWitness
-    })()) : null
+    this.strippedsize = this.tx
+      ? ((() => {
+          const txLead = compactSizeSize(this.tx.length)
+          const txSizeNoWitness = this.tx.reduce((p, tx) => {
+            p += tx.sizeNoWitness
+            return p
+          }, 0)
+          return 80 + txLead + txSizeNoWitness
+        })())
+      : null
   }
 
   _calculateWeight () {
@@ -175,7 +177,7 @@ class BitcoinBlock {
    * @method
    * @param {Symbol} noWitness calculate the merkle root without witness data (i.e. the standard
    * block header `merkleroot` value). Supply `HASH_NO_WITNESS` to activate.
-   * @returns {Buffer} the merkle root
+   * @returns {Promise<Buffer>} the merkle root
    */
   calculateMerkleRoot (noWitness) {
     if (!this.tx || !this.tx.length) {
@@ -198,7 +200,7 @@ class BitcoinBlock {
    * `scriptWitness` in the coinbase's single vin.
    *
    * @method
-   * @returns {Buffer} the witness commitment
+   * @returns {Promise<Buffer>} the witness commitment
    */
   calculateWitnessCommitment () {
     if (!this.tx || !this.tx.length) {

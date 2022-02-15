@@ -1,5 +1,5 @@
-const multibase = require('multibase')
-const bech32 = require('bech32')
+const { base58btc } = require('multiformats/bases/base58')
+const { bech32 } = require('bech32')
 const { dblSha2256, hash160 } = require('./class-utils')
 
 const MAX_SCRIPT_SIZE = 10000
@@ -680,7 +680,7 @@ function encodeAddress (buf, type) {
     }
     const hash = dblSha2256(buf)
     buf = Buffer.concat([buf, hash.slice(0, 4)]) // 4 byte "check" at the end
-    return multibase.encode('base58btc', buf).toString().slice(1)
+    return base58btc.encode(buf).slice(1)
   }
   if (type === types.TX_WITNESS_V0_KEYHASH || type === types.TX_WITNESS_V0_SCRIPTHASH) {
     const words = bech32.toWords(buf)
