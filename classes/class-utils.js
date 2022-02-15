@@ -1,6 +1,6 @@
 const assert = require('assert')
-const multihashing = require('multihashing')
-const RIPEMD160 = require('ripemd160')
+const { hash: sha256 } = require('@stablelib/sha256')
+const RIPEMD160 = require('@rvagg/ripemd160')
 const WITNESS_SCALE_FACTOR = 4
 const SEGWIT_HEIGHT = 481824
 
@@ -94,9 +94,7 @@ function decodeProperties (propertiesDescriptor) {
  * @function
  */
 function dblSha2256 (bytes) {
-  let digest = multihashing.digest(bytes, 'sha2-256')
-  digest = multihashing.digest(digest, 'sha2-256')
-  return digest
+  return sha256(sha256(bytes))
 }
 
 function ripemd160 (bytes) {
@@ -104,7 +102,7 @@ function ripemd160 (bytes) {
 }
 
 function hash160 (bytes) { // bitcoin ripemd-160(sha2-256(bytes))
-  return ripemd160(multihashing.digest(bytes, 'sha2-256'))
+  return ripemd160(sha256(bytes))
 }
 
 /**
@@ -117,7 +115,9 @@ function hash160 (bytes) { // bitcoin ripemd-160(sha2-256(bytes))
  */
 function merkleRoot (hashes) {
   let last
-  for (last of merkle(hashes)) {}
+  for (last of merkle(hashes)) {
+    // empty
+  }
   return last.hash
 }
 
