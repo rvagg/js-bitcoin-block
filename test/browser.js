@@ -2,6 +2,7 @@
 
 const context = require.context('./fixtures', true, /\.json$/)
 const test = require('./test')
+const { fromHex } = require('../util')
 
 for (const key of context.keys()) {
   it(key, async () => {
@@ -10,7 +11,7 @@ for (const key of context.keys()) {
     // console.log((await import(`!!raw-loader!./fixtures/${hash}.hex`)).substr(0, 100)
     const data = (await import(`./fixtures/${hash}.json`)).default
     const blockHex = (await import(`!!raw-loader!./fixtures/${hash}.hex`)).default
-    const block = Buffer.from(blockHex.replace(/\n/g, ''), 'hex')
+    const block = fromHex(blockHex.replace(/\n/g, ''))
 
     test(hash, block, data)
   })

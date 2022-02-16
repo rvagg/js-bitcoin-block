@@ -4,6 +4,7 @@ const assert = require('chai').assert
 const { BitcoinBlock, BitcoinTransaction } = require('../')
 
 const { toHashHex, dblSha2256 } = require('../classes/class-utils')
+const { toHex } = require('../util')
 
 // round difficulty to 2 decimal places, it's a calculated value
 function roundDifficulty (obj) {
@@ -59,14 +60,14 @@ function verifyHeader (block, expectedComplete) {
 
   // re-encode
   const encodedHeader = decodedHeader.encode()
-  assert.strictEqual(encodedHeader.toString('hex'), headerData.toString('hex'), 're-encoded block header')
+  assert.strictEqual(toHex(encodedHeader), toHex(headerData), 're-encoded block header')
 
   // instantiate new
   const newHeader = BitcoinBlock.fromPorcelain(Object.assign({}, decodedHeader.toPorcelain()))
   assert.deepStrictEqual(roundDifficulty(newHeader.toPorcelain()), roundDifficulty(expected), 're-instantiated header data')
   // encode newly instantiated
   const encodedNewHeader = newHeader.encode()
-  assert.strictEqual(encodedNewHeader.toString('hex'), headerData.toString('hex'), 're-instantiated and encoded block header')
+  assert.strictEqual(toHex(encodedNewHeader), toHex(headerData), 're-instantiated and encoded block header')
 }
 
 function verifyMinimalForm (decoded, expected) {
@@ -98,14 +99,14 @@ function verifyRoundTrip (decoded, expected, block) {
   const w = (f, b) => {
     const a = []
     for (let i = 0; i < b.length; i += 50) {
-      a.push(`${i}: ` + b.slice(i, i + 50).toString('hex'))
+      a.push(`${i}: ` + b.slice(i, i + toHex(50)))
     }
     require('fs').writeFileSync(f, a.join('\n'), 'utf8')
   }
   w('act.hex', encodedNew)
   w('exp.hex', block)
   */
-  assert.strictEqual(encodedNew.toString('hex'), block.toString('hex'), 're-instantiated and encoded block')
+  assert.strictEqual(toHex(encodedNew), toHex(block), 're-instantiated and encoded block')
 }
 
 function verifyTransactionRoundTrip (tx, expectedTx, i) {
@@ -118,7 +119,7 @@ function verifyTransactionRoundTrip (tx, expectedTx, i) {
   assert.deepStrictEqual(roundDifficulty(cleanActualTransaction(newTransaction.toPorcelain(), i)), roundDifficulty(expectedTx), `re-instantiated data (${i})`)
   // encode newly instantiated
   const encodedNew = newTransaction.encode()
-  assert.strictEqual(encodedNew.toString('hex'), expectedTx.hex, `re-instantiated and encoded transaction (${i})`)
+  assert.strictEqual(toHex(encodedNew), expectedTx.hex, `re-instantiated and encoded transaction (${i})`)
 }
 
 function verifyTransaction (tx, expectedTx, i) {
@@ -141,16 +142,16 @@ function verifyTransaction (tx, expectedTx, i) {
   const w = (f, b) => {
     const a = []
     for (let i = 0; i < b.length; i += 50) {
-      a.push(`${i}: ` + b.slice(i, i + 50).toString('hex'))
+      a.push(`${i}: ` + b.slice(i, i + toHex(50)))
     }
     require('fs').writeFileSync(f, a.join('\n'), 'utf8')
   }
   w('act.hex', encodedTx)
-  w('exp.hex', Buffer.from(expectedTx.hex, 'hex'))
+  w('exp.hex', fromHex(expectedTx.hex))
   */
   const etxhash = toHashHex(dblSha2256(encodedTx))
   assert.strictEqual(etxhash, expectedTx.hash, `transaction encode hash ${i}`)
-  assert.strictEqual(encodedTx.toString('hex'), expectedTx.hex, `transaction encode raw ${i}`)
+  assert.strictEqual(toHex(encodedTx), expectedTx.hex, `transaction encode raw ${i}`)
 
   // segwit encoded form matches expected
   const encodedTxNoWitness = tx.encode(BitcoinTransaction.HASH_NO_WITNESS)
@@ -180,7 +181,7 @@ function verifyWitnessCommitment (decoded, expected) {
   // find the expected witness commitment [hash(nonce + full merkle root)] in the first transaction
   // and compare it to one we calculate from the nonce in the coinbase + our own calculated full merkle root
   const expectedWitnessCommitment = decoded.getWitnessCommitment()
-  if (Buffer.isBuffer(expectedWitnessCommitment) && expectedWitnessCommitment.length === 32) {
+  if ((expectedWitnessCommitment instanceof Uint8Array) && expectedWitnessCommitment.length === 32) {
     const witnessCommitment = decoded.calculateWitnessCommitment()
     assert.strictEqual(toHashHex(witnessCommitment), toHashHex(expectedWitnessCommitment), 'witness commitment')
   } else {

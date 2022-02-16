@@ -9,6 +9,7 @@ const {
   isHexString
 } = require('./class-utils')
 const { compactSizeSize } = require('../coding')
+const { toHex, concat } = require('../util')
 const BitcoinTransaction = require('./Transaction')
 
 /**
@@ -19,12 +20,12 @@ const BitcoinTransaction = require('./Transaction')
  *
  * @name BitcoinBlock
  * @property {number} version - positive integer
- * @property {Uint8Array|Buffer} previousblockhash - 256-bit hash
- * @property {Uint8Array|Buffer} merkleroot - 256-bit hash
+ * @property {Uint8Array} previousblockhash - 256-bit hash
+ * @property {Uint8Array} merkleroot - 256-bit hash
  * @property {number} time - seconds since epoch
  * @property {number} bits
  * @property {number} nonce - 32-bit integer
- * @property {Uint8Array|Buffer} hash - 256-bit hash, a double SHA2-256 hash of all bytes making up
+ * @property {Uint8Array} hash - 256-bit hash, a double SHA2-256 hash of all bytes making up
  * this block (calculated)
  * @property {Array.<BitcoinTransaction>} tx - an array of {@link BitcoinTransaction} objects
  * representing the transactions in this block
@@ -47,12 +48,12 @@ class BitcoinBlock {
    * To represent a header only, the `hash`, `tx` and `size` parameters are optional.
    *
    * @param {number} version
-   * @param {Uint8Array|Buffer} previousblockhash
-   * @param {Uint8Array|Buffer} merkleroot
+   * @param {Uint8Array} previousblockhash
+   * @param {Uint8Array} merkleroot
    * @param {number} time
    * @param {number} bits
    * @param {number} nonce
-   * @param {Uint8Array|Buffer} [hash]
+   * @param {Uint8Array} [hash]
    * @param {Array.<BitcoinTransaction>} [tx]
    * @param {number} [size]
    * @constructs BitcoinBlock
@@ -110,9 +111,10 @@ class BitcoinBlock {
       hash: toHashHex(this.hash),
       version: this.version,
       versionHex: ((() => {
-        const b = Buffer.alloc(4)
-        b.writeUInt32BE(this.version, 0)
-        return b.toString('hex')
+        const b = new Uint8Array(4)
+        const dv = new DataView(b.buffer, b.byteOffset, b.length)
+        dv.setUint32(0, this.version, false)
+        return toHex(b)
       })()),
       merkleroot: toHashHex(this.merkleroot),
       time: this.time,
@@ -177,14 +179,14 @@ class BitcoinBlock {
    * @method
    * @param {Symbol} noWitness calculate the merkle root without witness data (i.e. the standard
    * block header `merkleroot` value). Supply `HASH_NO_WITNESS` to activate.
-   * @returns {Promise<Buffer>} the merkle root
+   * @returns {Promise<Uint8Array>} the merkle root
    */
   calculateMerkleRoot (noWitness) {
     if (!this.tx || !this.tx.length) {
       throw new Error('Cannot calculate merkle root without transactions')
     }
     noWitness = noWitness === HASH_NO_WITNESS
-    const hashes = noWitness ? [] : [Buffer.alloc(32)] // coinbase transaction is 0x000... for fill merkle
+    const hashes = noWitness ? [] : [new Uint8Array(32)] // coinbase transaction is 0x000... for fill merkle
     for (let i = noWitness ? 0 : 1; i < this.tx.length; i++) {
       hashes.push(this.tx[i][noWitness ? 'txid' : 'hash'])
     }
@@ -200,7 +202,7 @@ class BitcoinBlock {
    * `scriptWitness` in the coinbase's single vin.
    *
    * @method
-   * @returns {Promise<Buffer>} the witness commitment
+   * @returns {Promise<Uint8Array>} the witness commitment
    */
   calculateWitnessCommitment () {
     if (!this.tx || !this.tx.length) {
@@ -213,7 +215,7 @@ class BitcoinBlock {
     const nonce = this.getWitnessCommitmentNonce()
     // full merkle root _with_ witness data but excluding coinbase
     const fullMerkleRoot = this.calculateMerkleRoot()
-    const witnessCommitment = dblSha2256(Buffer.concat([fullMerkleRoot, nonce]))
+    const witnessCommitment = dblSha2256(concat([fullMerkleRoot, nonce]))
 
     return witnessCommitment
   }
@@ -226,7 +228,7 @@ class BitcoinBlock {
    * See {@link BitcoinTransaction#getWitnessCommitment()}
    *
    * @method
-   * @returns {Buffer} the witness commitment
+   * @returns {Uint8Array} the witness commitment
    */
   getWitnessCommitment () {
     if (!this.tx || !this.tx.length) {
@@ -243,7 +245,7 @@ class BitcoinBlock {
    * See {@link BitcoinTransaction#getWitnessCommitmentNonce()}
    *
    * @method
-   * @returns {Buffer} the witness commitment nonce
+   * @returns {Uint8Array} the witness commitment nonce
    */
   getWitnessCommitmentNonce () {
     if (!this.tx || !this.tx.length) {
@@ -300,7 +302,7 @@ class BitcoinBlock {
  * return the block with transactions encoded _without_ witness data.
  * @name BitcoinBlock#encode
  * @method
- * @returns {Buffer}
+ * @returns {Uint8Array}
  */
 BitcoinBlock.prototype.encode = null
 
@@ -366,7 +368,7 @@ BitcoinBlock.fromPorcelain = function fromPorcelain (porcelain) {
   }
   const block = new BitcoinBlock(
     porcelain.version,
-    porcelain.previousblockhash ? fromHashHex(porcelain.previousblockhash) : Buffer.alloc(32),
+    porcelain.previousblockhash ? fromHashHex(porcelain.previousblockhash) : new Uint8Array(32),
     fromHashHex(porcelain.merkleroot),
     porcelain.time,
     parseInt(porcelain.bits, 16),
@@ -484,7 +486,7 @@ module.exports.BitcoinBlockHeaderOnly = BitcoinBlockHeaderOnly
  * Use this if you have the full block hash, otherwise use {@link BitcoinBlock.decodeBlockHeaderOnly}
  * to parse just the 80-byte header data.
  *
- * @param {Uint8Array|Buffer} bytes - the raw bytes of the block to be decoded.
+ * @param {Uint8Array} bytes - the raw bytes of the block to be decoded.
  * @param {boolean} strictLengthUsage - ensure that all bytes were consumed during decode.
  * This is useful when ensuring that bytes have been properly decoded where there is
  * uncertainty about whether the bytes represent a Block or not. Switch to `true` to be
@@ -506,7 +508,7 @@ BitcoinBlock.decode = null
  * `BitcoinBlock` and may be used as such. Just don't expect it to give you
  * any transaction data beyond the merkle root.
  *
- * @param {Uint8Array|Buffer} bytes - the raw bytes of the block to be decoded.
+ * @param {Uint8Array} bytes - the raw bytes of the block to be decoded.
  * @name BitcoinBlock.decodeBlockHeaderOnly
  * @function
  * @returns {BitcoinBlock}

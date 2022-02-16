@@ -1,3 +1,4 @@
+const { toHex, fromHex, concat } = require('../util')
 const assert = require('assert')
 const { hash: sha256 } = require('@stablelib/sha256')
 const RIPEMD160 = require('@rvagg/ripemd160')
@@ -36,32 +37,32 @@ const HASH_NO_WITNESS = Symbol.for('hash-no-witness')
  *
  * @name toHashHex
  * @function
- * @param {Buffer|Uint8Array} hash
+ * @param {Uint8Array} hash
  * @returns {string}
  */
 function toHashHex (hash) {
-  const rev = Buffer.alloc(hash.length)
+  const rev = new Uint8Array(hash.length)
   for (let i = 0; i < hash.length; i++) {
     rev[hash.length - i - 1] = hash[i]
   }
-  return rev.toString('hex')
+  return toHex(rev)
 }
 
 /**
  * Takes a string containing a big-endian uint256 in hex encoded form and converts it
  * to a standard byte array.
  *
- * This method simply reverses the string and produces a `Buffer` from the hex bytes.
+ * This method simply reverses the string and produces a `Uint8Array` from the hex bytes.
  *
  * See {@link toHashHex} for the reverse operation.
  *
  * @name fromHashHex
  * @function
  * @param {string} hashStr
- * @returns {Buffer}
+ * @returns {Uint8Array}
  */
 function fromHashHex (hashStr) {
-  const buf = Buffer.from(hashStr, 'hex')
+  const buf = fromHex(hashStr)
   assert(buf.length === 32)
   const mid = buf.length / 2
   for (let i = 0; i < mid; i++) {
@@ -89,8 +90,8 @@ function decodeProperties (propertiesDescriptor) {
  * Perform a standard Bitcoin double SHA2-256 hash on a binary blob.
  * SHA2-256(SHA2-256(bytes))
  *
- * @param {Uint8Array|Buffer} bytes a Buffer or Uint8Array
- * @returns {Buffer} a 32-byte digest
+ * @param {Uint8Array} bytes a Uint8Array
+ * @returns {Uint8Array} a 32-byte digest
  * @function
  */
 function dblSha2256 (bytes) {
@@ -109,8 +110,8 @@ function hash160 (bytes) { // bitcoin ripemd-160(sha2-256(bytes))
  * Generate a merkle root using {@link dblSha2256} on each node. The merkle tree uses Bitcoin's
  * algorithm whereby a level with an odd number of nodes has the last node duplicated.
  *
- * @param {Array<Uint8Array|Buffer>} hashes
- * @returns {Bufer} the merkle root hash
+ * @param {Array<Uint8Array>} hashes
+ * @returns {Uint8Array} the merkle root hash
  * @function
  */
 function merkleRoot (hashes) {
@@ -126,8 +127,8 @@ function merkleRoot (hashes) {
  * algorithm whereby a level with an odd number of nodes has the last node duplicated.
  *
  * This generator function will `yield` `{ hash, data }` elements for each node of the merkle
- * tree where `data` is a two-element array containing hash `Buffer`s of the previous level
- * and `hash` is a `Buffer` containing the hash of those concatenated hashes.
+ * tree where `data` is a two-element array containing hash `Uint8Array`s of the previous level
+ * and `hash` is a `Uint8Array` containing the hash of those concatenated hashes.
  *
  * It is possible for a result to _not_ contain a `data` element if the input hashes array
  * contains only one element, in this case, that single element will be the merkle root and
@@ -135,7 +136,7 @@ function merkleRoot (hashes) {
  *
  * The final yielded result is the merkle root.
  *
- * @param {Array<Uint8Array|Buffer>} hashes
+ * @param {Array<Uint8Array>} hashes
  * @yields {object} `{ hash, data }` where `data` is an array of two hashes
  * @generator
  * @function
@@ -157,7 +158,7 @@ function * merkle (hashes) {
     const newHashes = []
     for (let i = 0; i < hashes.length; i += 2) {
       const data = [hashes[i], hashes[i + 1]]
-      const hash = dblSha2256(Buffer.concat(data))
+      const hash = dblSha2256(concat(data))
       yield { hash, data }
       newHashes.push(hash)
     }
