@@ -1,6 +1,7 @@
 const { toHashHex, fromHashHex, decodeProperties, isHexString } = require('./class-utils')
 const { scriptToAsmStr } = require('./script')
 const BitcoinOutPoint = require('./OutPoint')
+const { toHex, fromHex } = require('../util')
 
 /**
  * A class representation of a Bitcoin TransactionIn, multiple of which are contained within each
@@ -8,7 +9,7 @@ const BitcoinOutPoint = require('./OutPoint')
  *
  * @property {BitcoinOutPoint} prevout - details of the transaction and TransactionOut that this
  * transaction follows from
- * @property {Uint8Array|Buffer} scriptSig - an arbitrary length byte array with signature data
+ * @property {Uint8Array} scriptSig - an arbitrary length byte array with signature data
  * @property {number} sequence
  * @class
  */
@@ -19,7 +20,7 @@ class BitcoinTransactionIn {
    * See the class properties for expanded information on these parameters.
    *
    * @param {BitcoinOutPoint} prevout
-   * @param {Uint8Array|Buffer} scriptSig
+   * @param {Uint8Array} scriptSig
    * @param {number} sequence
    * @constructs BitcoinTransactionIn
    */
@@ -33,7 +34,7 @@ class BitcoinTransactionIn {
     let obj
     if (coinbase) {
       obj = {
-        coinbase: this.scriptSig.toString('hex')
+        coinbase: toHex(this.scriptSig)
       }
     } else {
       obj = {
@@ -41,13 +42,13 @@ class BitcoinTransactionIn {
         vout: this.prevout.n,
         scriptSig: {
           asm: scriptToAsmStr(this.scriptSig, true),
-          hex: this.scriptSig.toString('hex')
+          hex: toHex(this.scriptSig)
         }
       }
     }
 
     if (this.scriptWitness && this.scriptWitness.length) {
-      obj.txinwitness = this.scriptWitness.map((w) => w.toString('hex'))
+      obj.txinwitness = this.scriptWitness.map((w) => toHex(w))
     }
 
     obj.sequence = this.sequence
@@ -114,8 +115,8 @@ BitcoinTransactionIn.fromPorcelain = function fromPorcelain (porcelain) {
     if (typeof porcelain.coinbase !== 'string' || !isHexString(porcelain.coinbase)) {
       throw new Error('coinbase property should be a hex string')
     }
-    const outpoint = new BitcoinOutPoint(Buffer.alloc(32), 0xffffffff) // max uint32 is "null"
-    vin = new BitcoinTransactionIn(outpoint, Buffer.from(porcelain.coinbase, 'hex'), porcelain.sequence)
+    const outpoint = new BitcoinOutPoint(new Uint8Array(32), 0xffffffff) // max uint32 is "null"
+    vin = new BitcoinTransactionIn(outpoint, fromHex(porcelain.coinbase), porcelain.sequence)
   } else {
     if (typeof porcelain.txid !== 'string' || !isHexString(porcelain.txid, 64)) {
       throw new Error('txid property should be a 64-character hex string')
@@ -131,7 +132,7 @@ BitcoinTransactionIn.fromPorcelain = function fromPorcelain (porcelain) {
     }
 
     const outpoint = new BitcoinOutPoint(fromHashHex(porcelain.txid), porcelain.vout)
-    vin = new BitcoinTransactionIn(outpoint, Buffer.from(porcelain.scriptSig.hex, 'hex'), porcelain.sequence)
+    vin = new BitcoinTransactionIn(outpoint, fromHex(porcelain.scriptSig.hex), porcelain.sequence)
   }
 
   let scriptWitness
@@ -144,7 +145,7 @@ BitcoinTransactionIn.fromPorcelain = function fromPorcelain (porcelain) {
       if (!isHexString(wit)) {
         throw new TypeError('txinwitness elements must be hex strings: ', wit)
       }
-      scriptWitness.push(Buffer.from(wit, 'hex'))
+      scriptWitness.push(fromHex(wit))
     }
   }
 

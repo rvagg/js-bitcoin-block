@@ -187,7 +187,7 @@ See [`fromHashHex`](#fromHashHex) for the reverse operation.
 
 **Parameters:**
 
-* **`hash`** _(`Buffer|Uint8Array`)_
+* **`hash`** _(`Uint8Array`)_
 
 **Return value**  _(`string`)_
 
@@ -197,7 +197,7 @@ See [`fromHashHex`](#fromHashHex) for the reverse operation.
 Takes a string containing a big-endian uint256 in hex encoded form and converts it
 to a standard byte array.
 
-This method simply reverses the string and produces a `Buffer` from the hex bytes.
+This method simply reverses the string and produces a `Uint8Array` from the hex bytes.
 
 See [`toHashHex`](#toHashHex) for the reverse operation.
 
@@ -205,7 +205,7 @@ See [`toHashHex`](#toHashHex) for the reverse operation.
 
 * **`hashStr`** _(`string`)_
 
-**Return value**  _(`Buffer`)_
+**Return value**  _(`Uint8Array`)_
 
 <a name="dblSha2256"></a>
 ### `dblSha2256(bytes)`
@@ -215,9 +215,9 @@ SHA2-256(SHA2-256(bytes))
 
 **Parameters:**
 
-* **`bytes`** _(`Uint8Array|Buffer`)_: a Buffer or Uint8Array
+* **`bytes`** _(`Uint8Array`)_: a Uint8Array
 
-**Return value**  _(`Buffer`)_: a 32-byte digest
+**Return value**  _(`Uint8Array`)_: a 32-byte digest
 
 <a name="merkleRoot"></a>
 ### `merkleRoot(hashes)`
@@ -227,7 +227,7 @@ algorithm whereby a level with an odd number of nodes has the last node duplicat
 
 **Parameters:**
 
-* **`hashes`** _(`Array.<(Uint8Array|Buffer)>`)_
+* **`hashes`** _(`Array.<(Uint8Array)>`)_
 
 **Return value**  _(`Bufer`)_: the merkle root hash
 
@@ -238,8 +238,8 @@ Generate a merkle tree using [`dblSha2256`](#dblSha2256) on each node. The merkl
 algorithm whereby a level with an odd number of nodes has the last node duplicated.
 
 This generator function will `yield` `{ hash, data }` elements for each node of the merkle
-tree where `data` is a two-element array containing hash `Buffer`s of the previous level
-and `hash` is a `Buffer` containing the hash of those concatenated hashes.
+tree where `data` is a two-element array containing hash `Uint8Array`s of the previous level
+and `hash` is a `Uint8Array` containing the hash of those concatenated hashes.
 
 It is possible for a result to _not_ contain a `data` element if the input hashes array
 contains only one element, in this case, that single element will be the merkle root and
@@ -249,7 +249,7 @@ The final yielded result is the merkle root.
 
 **Parameters:**
 
-* **`hashes`** _(`Array.<(Uint8Array|Buffer)>`)_
+* **`hashes`** _(`Array.<(Uint8Array)>`)_
 
 <a name="BitcoinBlock"></a>
 ### `class BitcoinBlock`
@@ -257,12 +257,12 @@ The final yielded result is the merkle root.
 **Properties:**
 
 * **`version`** _(`number`)_: positive integer
-* **`previousblockhash`** _(`Uint8Array|Buffer`)_: 256-bit hash
-* **`merkleroot`** _(`Uint8Array|Buffer`)_: 256-bit hash
+* **`previousblockhash`** _(`Uint8Array`)_: 256-bit hash
+* **`merkleroot`** _(`Uint8Array`)_: 256-bit hash
 * **`time`** _(`number`)_: seconds since epoch
 * **`bits`** _(`number`)_
 * **`nonce`** _(`number`)_: 32-bit integer
-* **`hash`** _(`Uint8Array|Buffer`)_: 256-bit hash, a double SHA2-256 hash of all bytes making up
+* **`hash`** _(`Uint8Array`)_: 256-bit hash, a double SHA2-256 hash of all bytes making up
   this block (calculated)
 * **`tx`** _(`Array.<BitcoinTransaction>`)_: an array of [`BitcoinTransaction`](#BitcoinTransaction) objects
   representing the transactions in this block
@@ -297,12 +297,12 @@ To represent a header only, the `hash`, `tx` and `size` parameters are optional.
 **Parameters:**
 
 * **`version`** _(`number`)_
-* **`previousblockhash`** _(`Uint8Array|Buffer`)_
-* **`merkleroot`** _(`Uint8Array|Buffer`)_
+* **`previousblockhash`** _(`Uint8Array`)_
+* **`merkleroot`** _(`Uint8Array`)_
 * **`time`** _(`number`)_
 * **`bits`** _(`number`)_
 * **`nonce`** _(`number`)_
-* **`hash`** _(`Uint8Array|Buffer`, optional)_
+* **`hash`** _(`Uint8Array`, optional)_
 * **`tx`** _(`Array.<BitcoinTransaction>`, optional)_
 * **`size`** _(`number`, optional)_
 
@@ -341,7 +341,7 @@ alone.
 * **`noWitness`** _(`Symbol`)_: calculate the merkle root without witness data (i.e. the standard
   block header `merkleroot` value). Supply `HASH_NO_WITNESS` to activate.
 
-**Return value**  _(`Buffer`)_: the merkle root
+**Return value**  _(`Uint8Array`)_: the merkle root
 
 <a name="BitcoinBlock_calculateWitnessCommitment"></a>
 ### `BitcoinBlock#calculateWitnessCommitment()`
@@ -353,7 +353,7 @@ This method assumes this object has transactions attached to it and is not the h
 alone. It also assumes a valid witness nonce stored in the single element of the
 `scriptWitness` in the coinbase's single vin.
 
-**Return value**  _(`Buffer`)_: the witness commitment
+**Return value**  _(`Uint8Array`)_: the witness commitment
 
 <a name="BitcoinBlock_getWitnessCommitment"></a>
 ### `BitcoinBlock#getWitnessCommitment()`
@@ -364,7 +364,7 @@ the witness commitment within one of the vout elements.
 
 See [`BitcoinTransaction#getWitnessCommitment()`](#BitcoinTransaction_getWitnessCommitment____)
 
-**Return value**  _(`Buffer`)_: the witness commitment
+**Return value**  _(`Uint8Array`)_: the witness commitment
 
 <a name="BitcoinBlock_getWitnessCommitmentNonce"></a>
 ### `BitcoinBlock#getWitnessCommitmentNonce()`
@@ -375,7 +375,7 @@ into the coinbase to find the nonce in the scriptWitness.
 
 See [`BitcoinTransaction#getWitnessCommitmentNonce()`](#BitcoinTransaction_getWitnessCommitmentNonce____)
 
-**Return value**  _(`Buffer`)_: the witness commitment nonce
+**Return value**  _(`Uint8Array`)_: the witness commitment nonce
 
 <a name="BitcoinBlock_isSegWit"></a>
 ### `BitcoinBlock#isSegWit()`
@@ -401,7 +401,7 @@ block data and produce the same binary output.
   `BitcoinBlock.HASH_NO_WITNESS` is a valid argument, which when provided will
   return the block with transactions encoded _without_ witness data.
 
-**Return value**  _(`Buffer`)_
+**Return value**  _(`Uint8Array`)_
 
 <a name="BitcoinBlock__HASH_NO_WITNESS"></a>
 ### `BitcoinBlock.HASH_NO_WITNESS`
@@ -448,7 +448,7 @@ to parse just the 80-byte header data.
 
 **Parameters:**
 
-* **`bytes`** _(`Uint8Array|Buffer`)_: the raw bytes of the block to be decoded.
+* **`bytes`** _(`Uint8Array`)_: the raw bytes of the block to be decoded.
 * **`strictLengthUsage`** _(`boolean`)_: ensure that all bytes were consumed during decode.
   This is useful when ensuring that bytes have been properly decoded where there is
   uncertainty about whether the bytes represent a Block or not. Switch to `true` to be
@@ -471,7 +471,7 @@ any transaction data beyond the merkle root.
 
 **Parameters:**
 
-* **`bytes`** _(`Uint8Array|Buffer`)_: the raw bytes of the block to be decoded.
+* **`bytes`** _(`Uint8Array`)_: the raw bytes of the block to be decoded.
 
 **Return value**  _(`BitcoinBlock`)_
 
@@ -486,9 +486,9 @@ any transaction data beyond the merkle root.
 * **`vin`** _(`Array.<BitcoinTransactionIn>`)_: an array of [`BitcoinTransactionIn`](#BitcoinTransactionIn)s
 * **`vout`** _(`Array.<BitcoinTransactionIn>`)_: an array of [`BitcoinTransactionOut`](#BitcoinTransactionOut)s
 * **`lockTime`** _(`number`)_
-* **`rawBytes`** _(`Uint8Array|Buffer`)_: the raw bytes of the encoded form of this transaction
-* **`hash`** _(`Uint8Array|Buffer`)_: the hash of the entire transaction, including witness data
-* **`txid`** _(`Uint8Array|Buffer`)_: the hash of the transaction minus witness data
+* **`rawBytes`** _(`Uint8Array`)_: the raw bytes of the encoded form of this transaction
+* **`hash`** _(`Uint8Array`)_: the hash of the entire transaction, including witness data
+* **`txid`** _(`Uint8Array`)_: the hash of the transaction minus witness data
 * **`sizeNoWitness`** _(`number`)_: the sise of the transaction in bytes when encoded without
   witness data
 * **`size`** _(`number`)_: the size of the transaction when encoded with witness data (i.e. the
@@ -519,9 +519,9 @@ See the class properties for expanded information on these parameters.
 * **`vin`** _(`Array.<BitcoinTransactionIn>`)_
 * **`vout`** _(`Array.<BitcoinTransactionIn>`)_
 * **`lockTime`** _(`number`)_
-* **`rawBytes`** _(`Uint8Array|Buffer`, optional)_
-* **`hash`** _(`Uint8Array|Buffer`, optional)_
-* **`txid`** _(`Uint8Array|Buffer`, optional)_
+* **`rawBytes`** _(`Uint8Array`, optional)_
+* **`hash`** _(`Uint8Array`, optional)_
+* **`txid`** _(`Uint8Array`, optional)_
 * **`sizeNoWitness`** _(`number`, optional)_
 * **`size`** _(`number`, optional)_
 
@@ -558,7 +558,7 @@ _coinbase_ transactions. See [`BitcoinTransaction#getWitnessCommitmentIndex`](#B
 on how this is found in the vout array. The leading 6 byte flag is removed from the
 `scriptPubKey` of the vout before being returned by this method.
 
-**Return value**  _(`Buffer`)_: the witness commitment
+**Return value**  _(`Uint8Array`)_: the witness commitment
 
 <a name="BitcoinTransaction_getWitnessCommitmentNonce"></a>
 ### `BitcoinTransaction#getWitnessCommitmentNonce()`
@@ -572,7 +572,7 @@ The scriptWitness of a SegWit coinbase contains a stack with a single 32-byte ar
 is the nonce that combines with the witness merkle root to be hashed together and form the
 witness commitment.
 
-**Return value**  _(`Buffer`)_: the witness commitment
+**Return value**  _(`Uint8Array`)_: the witness commitment
 
 <a name="BitcoinTransaction_isCoinbase"></a>
 ### `BitcoinTransaction#isCoinbase()`
@@ -602,7 +602,7 @@ transaction data and produce the same binary output.
   while the binary data from a full transaction will produce the `hash` which is
   used in the witness merkle and witness commitment.
 
-**Return value**  _(`Buffer`)_
+**Return value**  _(`Uint8Array`)_
 
 <a name="BitcoinTransaction__isPorcelainSegWit"></a>
 ### `BitcoinTransaction.isPorcelainSegWit(porcelain)`
@@ -658,7 +658,7 @@ each element of the `tx` array. It may also come from the
 
 **Parameters:**
 
-* **`bytes`** _(`Uint8Array|Buffer`)_: the raw bytes of the transaction to be decoded.
+* **`bytes`** _(`Uint8Array`)_: the raw bytes of the transaction to be decoded.
 * **`strictLengthUsage`** _(`boolean`)_: ensure that all bytes were consumed during decode.
   This is useful when ensuring that bytes have been properly decoded where there is
   uncertainty about whether the bytes represent a Transaction or not. Switch to `true`
@@ -676,7 +676,7 @@ A class representation of a Bitcoin TransactionIn, multiple of which are contain
 
 * **`prevout`** _(`BitcoinOutPoint`)_: details of the transaction and TransactionOut that this
   transaction follows from
-* **`scriptSig`** _(`Uint8Array|Buffer`)_: an arbitrary length byte array with signature data
+* **`scriptSig`** _(`Uint8Array`)_: an arbitrary length byte array with signature data
 * **`sequence`** _(`number`)_
 
 <a name="BitcoinTransactionIn_new"></a>
@@ -742,7 +742,7 @@ A class representation of a Bitcoin TransactionOut, multiple of which are contai
 **Properties:**
 
 * **`value`** _(`number`)_: an amount / value for this TransactionOut (in satoshis, not BTC)
-* **`scriptPubKey`** _(`Uint8Array|Buffer`)_: an arbitrary length byte array
+* **`scriptPubKey`** _(`Uint8Array`)_: an arbitrary length byte array
 
 <a name="BitcoinTransactionOut_new"></a>
 #### Constructor: `BitcoinTransactionOut(value, scriptPubKey)`

@@ -10,7 +10,7 @@ const {
 } = require('./class-utils')
 const BitcoinTransactionIn = require('./TransactionIn')
 const BitcoinTransactionOut = require('./TransactionOut')
-const NULL_HASH = Buffer.alloc(32)
+const { toHex, concat } = require('../util')
 
 /**
  * A class representation of a Bitcoin Transaction, multiple of which are contained within each
@@ -23,9 +23,9 @@ const NULL_HASH = Buffer.alloc(32)
  * @property {Array.<BitcoinTransactionIn>} vin - an array of {@link BitcoinTransactionIn}s
  * @property {Array.<BitcoinTransactionIn>} vout - an array of {@link BitcoinTransactionOut}s
  * @property {number} lockTime
- * @property {Uint8Array|Buffer} rawBytes - the raw bytes of the encoded form of this transaction
- * @property {Uint8Array|Buffer} hash - the hash of the entire transaction, including witness data
- * @property {Uint8Array|Buffer} txid - the hash of the transaction minus witness data
+ * @property {Uint8Array} rawBytes - the raw bytes of the encoded form of this transaction
+ * @property {Uint8Array} hash - the hash of the entire transaction, including witness data
+ * @property {Uint8Array} txid - the hash of the transaction minus witness data
  * @property {number} sizeNoWitness - the sise of the transaction in bytes when encoded without
  * witness data
  * @property {number} size - the size of the transaction when encoded with witness data (i.e. the
@@ -45,9 +45,9 @@ class BitcoinTransaction {
    * @param {Array.<BitcoinTransactionIn>} vin
    * @param {Array.<BitcoinTransactionIn>} vout
    * @param {number} lockTime
-   * @param {Uint8Array|Buffer} [rawBytes]
-   * @param {Uint8Array|Buffer} [hash]
-   * @param {Uint8Array|Buffer} [txid]
+   * @param {Uint8Array} [rawBytes]
+   * @param {Uint8Array} [hash]
+   * @param {Uint8Array} [txid]
    * @param {number} [sizeNoWitness]
    * @param {number} [size]
    * @constructs BitcoinTransaction
@@ -86,7 +86,7 @@ class BitcoinTransaction {
       locktime: this.lockTime,
       vin: this.vin.map((vin) => vin.toJSON(null, coinbase)),
       vout: this.vout.map((vout, n) => vout.toJSON(n)),
-      hex: this.rawBytes.toString('hex')
+      hex: toHex(this.rawBytes)
     }
     return obj
   }
@@ -143,7 +143,7 @@ class BitcoinTransaction {
    * `scriptPubKey` of the vout before being returned by this method.
    *
    * @method
-   * @returns {Buffer} the witness commitment
+   * @returns {Uint8Array} the witness commitment
    */
   getWitnessCommitment () {
     const wci = this.getWitnessCommitmentIndex()
@@ -168,7 +168,7 @@ class BitcoinTransaction {
    * witness commitment.
    *
    * @method
-   * @returns {Buffer} the witness commitment
+   * @returns {Uint8Array} the witness commitment
    */
   getWitnessCommitmentNonce () {
     if (!this.isCoinbase() || !this.segWit) {
@@ -189,11 +189,21 @@ class BitcoinTransaction {
    * @returns {boolean}
    */
   isCoinbase () {
-    return this.vin &&
+    if (this.vin &&
       this.vin.length === 1 &&
       this.vin[0].prevout &&
       this.vin[0].prevout &&
-      NULL_HASH.equals(this.vin[0].prevout.hash)
+      this.vin[0].prevout.hash.length === 32) {
+      // is null hash
+      const b = this.vin[0].prevout.hash
+      for (let i = 0; i < b.length; i++) {
+        if (b[i] !== 0) {
+          return false
+        }
+      }
+      return true
+    }
+    return false
   }
 }
 
@@ -215,7 +225,7 @@ class BitcoinTransaction {
  * used in the witness merkle and witness commitment.
  * @name BitcoinTransaction#encode
  * @method
- * @returns {Buffer}
+ * @returns {Uint8Array}
  */
 BitcoinTransaction.prototype.encode = null
 
@@ -300,7 +310,7 @@ BitcoinTransaction.fromPorcelain = function fromPorcelain (porcelain) {
       }
     }
     if (porcelain.vin[0].coinbase && !vin[0].scriptWitness) {
-      vin[0].scriptWitness = [Buffer.alloc(32)] // assume default null, good guess, but still a guess
+      vin[0].scriptWitness = [new Uint8Array(32)] // assume default null, good guess, but still a guess
     }
   }
   const vout = porcelain.vout.map(BitcoinTransactionOut.fromPorcelain)
@@ -318,7 +328,7 @@ BitcoinTransaction.fromPorcelain = function fromPorcelain (porcelain) {
     throw new Error('Transaction#encode() not available')
   }
   const rawBytes = transaction.encode()
-  transaction.rawBytes = rawBytes.toString('hex')
+  transaction.rawBytes = rawBytes
   transaction.size = rawBytes.length
   transaction.hash = dblSha2256(rawBytes)
   const rawBytesNoWitness = transaction.encode(HASH_NO_WITNESS)
@@ -338,7 +348,7 @@ BitcoinTransaction.HASH_NO_WITNESS = HASH_NO_WITNESS
  * each element of the `tx` array. It may also come from the
  * {@link BitcoinTransaction#encode} method.
  *
- * @param {Uint8Array|Buffer} bytes - the raw bytes of the transaction to be decoded.
+ * @param {Uint8Array} bytes - the raw bytes of the transaction to be decoded.
  * @param {boolean} strictLengthUsage - ensure that all bytes were consumed during decode.
  * This is useful when ensuring that bytes have been properly decoded where there is
  * uncertainty about whether the bytes represent a Transaction or not. Switch to `true`
@@ -392,7 +402,7 @@ BitcoinTransaction._customDecodeSegWit = function (decoder, properties, state) {
 
 BitcoinTransaction._customEncodeSegWit = function * (transaction, encoder, args) {
   if ((!args || args[0] !== HASH_NO_WITNESS) && transaction.segWit) {
-    yield Buffer.from([0x00, 0x01])
+    yield Uint8Array.from([0x00, 0x01])
   }
 }
 
@@ -453,7 +463,7 @@ BitcoinTransaction._customDecodeHashNoWitness = function (decoder, properties, s
   hashBytesArray.push(decoder.absoluteSlice(start, segWitFlagStart - start))
   hashBytesArray.push(decoder.absoluteSlice(segWitFlagEnd, witnessStart - segWitFlagEnd))
   hashBytesArray.push(decoder.absoluteSlice(witnessEnd, end - witnessEnd))
-  const hashBytes = Buffer.concat(hashBytesArray)
+  const hashBytes = concat(hashBytesArray)
 
   const digest = dblSha2256(hashBytes)
 
@@ -468,8 +478,8 @@ BitcoinTransaction._customDecodeSize = function (decoder, properties, state) {
   /* debugging data for generating test fixtures focused on transactions
   const hash = properties[properties.length - 4]
   let hashNoWitness = properties[properties.length - 3]
-  hashNoWitness = hashNoWitness ? `'${hashNoWitness.toString('hex')}'` : 'null'
-  require('fs').appendFileSync('tx.log', `  ['${hash.toString('hex')}', ${hashNoWitness}, ${start}, ${end}],\n`, 'utf8')
+  hashNoWitness = hashNoWitness ? `'${toHex(hashNoWitness)}'` : 'null'
+  require('fs').appendFileSync('tx.log', `  ['${toHex(hash)}', ${hashNoWitness}, ${start}, ${end}],\n`, 'utf8')
   */
 }
 

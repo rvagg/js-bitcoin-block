@@ -1,18 +1,21 @@
+const { toHex } = require('./util')
 const classRegistry = {}
 
 // https://github.com/zcash/zcash/blob/fa1b656482a38d3a6c97950b35521a9c45da1e9c/src/serialize.h#L264
 function writeCompactSize (size) {
   if (size < 253) {
-    return Buffer.from([size])
+    return Uint8Array.from([size])
   } else if (size <= 0xffff) {
-    const b = Buffer.alloc(3)
-    b.writeUInt8(253)
-    b.writeUInt16LE(size, 1)
+    const b = new Uint8Array(3)
+    const dv = new DataView(b.buffer, b.byteOffset, b.length)
+    dv.setUint8(0, 253)
+    dv.setUint16(1, size, true)
     return b
   } else if (size <= 0xffffffff) {
-    const b = Buffer.alloc(5)
-    b.writeUInt8(254)
-    b.writeUInt32LE(size, 1)
+    const b = new Uint8Array(5)
+    const dv = new DataView(b.buffer, b.byteOffset, b.length)
+    dv.setUint8(0, 253)
+    dv.setUint32(1, size, true)
     return b
   } else {
     throw new Error('writeCompactSize() size too large')
@@ -40,10 +43,11 @@ const encoders = {
       throw new Error('Encoding int32 requires a "number" type')
     }
 
-    const b = Buffer.alloc(4)
-    b.writeInt32LE(v)
+    const b = new Uint8Array(4)
+    const dv = new DataView(b.buffer, b.byteOffset, b.length)
+    dv.setInt32(0, v, true)
     if (module.exports.DEBUG) {
-      console.log(`int32_t[${v}]: ${b.toString('hex')}`)
+      console.log(`int32_t[${v}]: ${toHex(b)}`)
     }
     yield b
   },
@@ -53,40 +57,41 @@ const encoders = {
       throw new Error('Encoding uint32 requires a "number" type')
     }
 
-    const b = Buffer.alloc(4)
-    b.writeUInt32LE(v)
+    const b = new Uint8Array(4)
+    const dv = new DataView(b.buffer, b.byteOffset, b.length)
+    dv.setUint32(0, v, true)
     if (module.exports.DEBUG) {
-      console.log(`uint32_t[${v}]: ${b.toString('hex')}`)
+      console.log(`uint32_t[${v}]: ${toHex(b)}`)
     }
     yield b
   },
 
   uint256: function * writeHash (v) {
-    if (!Buffer.isBuffer(v)) {
-      throw new Error('Encoding uint256 requires a "Buffer" type')
+    if (!(v instanceof Uint8Array)) {
+      throw new Error('Encoding uint256 requires a "Uint8Array" type')
     }
     if (v.length !== 32) {
-      throw new Error('Encoding uint256 requires 32-byte Buffer')
+      throw new Error('Encoding uint256 requires 32-byte Uint8Array')
     }
     if (module.exports.DEBUG) {
-      console.log(`uint256: ${v.toString('hex')}`)
+      console.log(`uint256: ${toHex(v)}`)
     }
     yield v
   },
 
   compactSlice: function * writeCompactSlice (v) {
-    if (!Buffer.isBuffer(v)) {
-      throw new Error('Encoding compact slice requires a "Buffer" type')
+    if (!(v instanceof Uint8Array)) {
+      throw new Error('Encoding compact slice requires a "Uint8Array" type')
     }
     if (module.exports.DEBUG) {
-      console.log(`compactSlice[${v.length}]: ${writeCompactSize(v.length).toString('hex')} + ${v.toString('hex')}`)
+      console.log(`compactSlice[${v.length}]: ${toHex(writeCompactSize(v.length))} + ${toHex(v)}`)
     }
     yield writeCompactSize(v.length)
     yield v
   },
 
   int64_t: function * writeBigInt64LE (v) {
-    const buf = Buffer.alloc(8)
+    const buf = new Uint8Array(8)
     buf[0] = v
     buf[1] = v >> 8
     buf[2] = v >> 16
@@ -100,17 +105,17 @@ const encoders = {
     buf[6] = hi >> 16
     buf[7] = hi >> 24
     if (module.exports.DEBUG) {
-      console.log(`int64_t: ${buf.toString('hex')}`)
+      console.log(`int64_t: ${toHex(buf)}`)
     }
     yield buf
   },
 
   slice: function * writeSlice (v) {
-    if (!Buffer.isBuffer(v)) {
-      throw new Error('Encoding slice requires a "Buffer" type')
+    if (!(v instanceof Uint8Array)) {
+      throw new Error('Encoding slice requires a "Uint8Array" type')
     }
     if (module.exports.DEBUG) {
-      console.log(`slice: ${v.toString('hex')}`)
+      console.log(`slice: ${toHex(v)}`)
     }
     yield v
   }
@@ -143,7 +148,7 @@ function * encoder (typ, value, args) {
       throw new Error(`Encoding std::vector (${typ}) requires an array`)
     }
     if (module.exports.DEBUG) {
-      console.log(`cs[${arr.length}]: ${writeCompactSize(arr.length).toString('hex')}`)
+      console.log(`cs[${arr.length}]: ${toHex(writeCompactSize(arr.length))}`)
     }
     yield writeCompactSize(arr.length)
     for (const v of arr) {
@@ -193,19 +198,26 @@ function * encodeType (obj, args) {
 }
 
 // https://github.com/zcash/zcash/blob/fa1b656482a38d3a6c97950b35521a9c45da1e9c/src/serialize.h#L288
+/**
+ * @param {Uint8Array} buf
+ * @param {number} offset
+ * @returns {[number, number]}
+ */
 function readCompactSize (buf, offset) {
-  const chSize = buf.readUInt8(offset)
+  const chSize = buf[offset]
   offset++
   if (chSize < 253) {
     return [chSize, 1]
   } else if (chSize === 253) {
-    const nSizeRet = buf.readUInt16LE(offset)
+    const dv = new DataView(buf.buffer, buf.byteOffset, buf.length)
+    const nSizeRet = dv.getUint16(offset, true)
     if (nSizeRet < 253) {
       throw new Error('non-canonical readCompactSize()')
     }
     return [nSizeRet, 3]
   } else if (chSize === 254) {
-    const nSizeRet = buf.readUInt32LE(offset)
+    const dv = new DataView(buf.buffer, buf.byteOffset, buf.length)
+    const nSizeRet = dv.getUint32(offset, true)
     if (nSizeRet < 0x10000) {
       throw new Error('non-canonical readCompactSize()')
     }
@@ -260,19 +272,21 @@ function decodeType (buf, type, strictLengthUsage) {
     },
 
     readUInt8 () {
-      const i = buf.readUInt8(pos)
+      const i = buf[pos]
       pos++
       return i
     },
 
     readUInt32LE () {
-      const i = buf.readUInt32LE(pos)
+      const dv = new DataView(buf.buffer, buf.byteOffset, buf.length)
+      const i = dv.getUint32(pos, true)
       pos += 4
       return i
     },
 
     readInt32LE () {
-      const i = buf.readInt32LE(pos)
+      const dv = new DataView(buf.buffer, buf.byteOffset, buf.length)
+      const i = dv.getInt32(pos, true)
       pos += 4
       return i
     },

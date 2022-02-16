@@ -5,7 +5,7 @@ const { decodeProperties, toHashHex } = require('./class-utils')
  *
  * This class isn't explicitly exported, access it for direct use with `require('bitcoin-block/classes/OutPoint')`.
  *
- * @property {Uint8Array|Buffer} hash
+ * @property {Uint8Array} hash
  * @property {number} n
  * @class
  */
@@ -15,7 +15,7 @@ class BitcoinOutPoint {
    *
    * See the class properties for expanded information on these parameters.
    *
-   * @property {Uint8Array|Buffer} hash
+   * @property {Uint8Array} hash
    * @property {number} n
    * @constructs BitcoinOutPoint
    */

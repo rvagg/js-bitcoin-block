@@ -1,13 +1,14 @@
 const { decodeProperties, isHexString } = require('./class-utils')
 const { COIN } = require('./class-utils')
 const { types, scriptToAsmStr, solver, extractDestinations, encodeAddress } = require('./script')
+const { toHex, fromHex } = require('../util')
 
 /**
  * A class representation of a Bitcoin TransactionOut, multiple of which are contained within each
  * {@link BitcoinTransaction} in its `vout` array.
  *
  * @property {number} value - an amount / value for this TransactionOut (in satoshis, not BTC)
- * @property {Uint8Array|Buffer} scriptPubKey - an arbitrary length byte array
+ * @property {Uint8Array} scriptPubKey - an arbitrary length byte array
  * @class
  */
 class BitcoinTransactionOut {
@@ -17,7 +18,7 @@ class BitcoinTransactionOut {
    * See the class properties for expanded information on these parameters.
    *
    * @param {BigInt|number} value
-   * @param {Uint8Array|Buffer} scriptPubKey
+   * @param {Uint8Array} scriptPubKey
    * @constructs BitcoinTransactionOut
    */
   constructor (value, scriptPubKey) {
@@ -34,7 +35,7 @@ class BitcoinTransactionOut {
       const solution = solver(this.scriptPubKey)
       obj.scriptPubKey = {
         asm: scriptToAsmStr(this.scriptPubKey),
-        hex: this.scriptPubKey.toString('hex')
+        hex: toHex(this.scriptPubKey)
       }
       if (solution.solutions && solution.type !== types.TX_PUBKEY) {
         const dest = extractDestinations(this.scriptPubKey)
@@ -101,7 +102,7 @@ BitcoinTransactionOut.fromPorcelain = function fromPorcelain (porcelain) {
     throw new TypeError('scriptPubKey.hex property must be a hex string')
   }
   const value = Math.round(porcelain.value * COIN) // round to deal with the likely fraction, we need a uint64
-  return new BitcoinTransactionOut(value, Buffer.from(porcelain.scriptPubKey.hex, 'hex'))
+  return new BitcoinTransactionOut(value, fromHex(porcelain.scriptPubKey.hex))
 }
 
 // -------------------------------------------------------------------------------------------------------

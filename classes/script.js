@@ -1,6 +1,7 @@
 const { base58btc } = require('multiformats/bases/base58')
 const { bech32 } = require('bech32')
 const { dblSha2256, hash160 } = require('./class-utils')
+const { toHex, concat } = require('../util')
 
 const MAX_SCRIPT_SIZE = 10000
 const BECH32_HRP = 'bc'
@@ -179,7 +180,7 @@ function getScriptOp (buf, offset = 0) {
     return null
   }
   const opcode = buf[offset++]
-  let data = Buffer.alloc(0)
+  let data = new Uint8Array(0)
 
   if (opcode <= opcodes.OP_PUSHDATA4) {
     let nSize = 0
@@ -194,13 +195,15 @@ function getScriptOp (buf, offset = 0) {
       if (buf.length - offset < 2) {
         return null
       }
-      nSize = buf.readUInt16LE(offset)
+      const dv = new DataView(buf.buffer, buf.byteOffset, buf.length)
+      nSize = dv.getUint16(offset, true)
       offset += 2
     } else if (opcode === opcodes.OP_PUSHDATA4) {
       if (buf.length - offset < 4) {
         return null
       }
-      nSize = buf.readUInt32LE(offset)
+      const dv = new DataView(buf.buffer, buf.byteOffset, buf.length)
+      nSize = dv.getUint32(offset, true)
       offset += 4
     }
     if (buf.length - offset < 0 || buf.length - offset < nSize) {
@@ -351,7 +354,7 @@ function scriptToAsmStr (buf, attemptSighashDecode) {
             }
           }
         }
-        str += `${op.data.toString('hex')}${strSigHashDecode}`
+        str += `${toHex(op.data)}${strSigHashDecode}`
       }
     } else {
       str += op.opcodeName
@@ -556,7 +559,7 @@ function solver (buf) {
     }
     if (witnessProgram.version !== 0) {
       return {
-        solutions: [Buffer.from([witnessProgram.version]), witnessProgram.program],
+        solutions: [Uint8Array.from([witnessProgram.version]), witnessProgram.program],
         type: types.TX_WITNESS_UNKNOWN
       }
     }
@@ -589,11 +592,11 @@ function solver (buf) {
 
   const multisig = matchMultisig(buf)
   if (multisig) {
-    const solutions = [Buffer.from([multisig.required])]
+    const solutions = [Uint8Array.from([multisig.required])]
     for (const sol of multisig.pubkeys) {
       solutions.push(sol)
     }
-    solutions.push(Buffer.from([multisig.pubkeys.length]))
+    solutions.push(Uint8Array.from([multisig.pubkeys.length]))
     return {
       solutions,
       type: types.TX_MULTISIG
@@ -674,12 +677,12 @@ function encodeAddress (buf, type) {
       if (type === types.TX_MULTISIG) {
         buf = hash160(buf) // pubkey to a pkhash
       }
-      buf = Buffer.concat([Buffer.from([0]), buf]) // PUBKEY_ADDRESS base58Prefix
+      buf = concat([Uint8Array.from([0]), buf]) // PUBKEY_ADDRESS base58Prefix
     } else {
-      buf = Buffer.concat([Buffer.from([5]), buf]) // TX_SCRIPTHASH base58Prefix
+      buf = concat([Uint8Array.from([5]), buf]) // TX_SCRIPTHASH base58Prefix
     }
     const hash = dblSha2256(buf)
-    buf = Buffer.concat([buf, hash.slice(0, 4)]) // 4 byte "check" at the end
+    buf = concat([buf, hash.slice(0, 4)]) // 4 byte "check" at the end
     return base58btc.encode(buf).slice(1)
   }
   if (type === types.TX_WITNESS_V0_KEYHASH || type === types.TX_WITNESS_V0_SCRIPTHASH) {
