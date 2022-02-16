@@ -4,24 +4,25 @@
   "description": "A Bitcoin block interface and decoder for JavaScript",
   "main": "bitcoin-block.js",
   "dependencies": {
-    "@rvagg/ripemd160": "^2.1.0",
+    "@rvagg/ripemd160": "^2.1.1",
     "@stablelib/sha256": "^1.0.1",
     "assert": "^2.0.0",
     "bech32": "^2.0.0",
-    "multiformats": "^9.6.3"
+    "multiformats": "^9.6.4"
   },
   "devDependencies": {
     "chai": "^4.3.6",
     "jsdoc4readme": "^1.4.0",
     "mocha": "^9.2.0",
-    "polendina": "^2.0.10",
+    "polendina": "^2.0.11",
     "standard": "^16.0.4"
   },
   "scripts": {
     "lint": "standard",
-    "test:browser": "polendina --runner=mocha --cleanup test/browser.js",
+    "test:browser": "polendina --timeout 320 --runner=mocha --cleanup test/browser.js",
     "test:node": "mocha test/node.js",
     "test": "npm run lint && npm run test:node",
+    "test:ci": "npm run test && npm run test:browser",
     "docs": "jsdoc4readme --readme bitcoin-block.js classes/class-utils.js classes/Block.js classes/Transaction.js classes/TransactionIn.js classes/TransactionOut.js"
   },
   "bin": {

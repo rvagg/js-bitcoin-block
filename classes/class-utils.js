@@ -1,5 +1,4 @@
 const { toHex, fromHex, concat } = require('../util')
-const assert = require('assert')
 const { hash: sha256 } = require('@stablelib/sha256')
 const RIPEMD160 = require('@rvagg/ripemd160')
 const WITNESS_SCALE_FACTOR = 4
@@ -63,7 +62,9 @@ function toHashHex (hash) {
  */
 function fromHashHex (hashStr) {
   const buf = fromHex(hashStr)
-  assert(buf.length === 32)
+  if (buf.length !== 32) {
+    throw new Error(`Invalid hash length (${buf.length}), expected 32`)
+  }
   const mid = buf.length / 2
   for (let i = 0; i < mid; i++) {
     const bi = buf[i]
