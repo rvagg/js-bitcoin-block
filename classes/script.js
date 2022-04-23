@@ -221,7 +221,7 @@ function getScriptOp (buf, offset = 0) {
   return {
     opcode,
     opcodeName: opcodeNames[opcode] || 'OP_UNKNOWN',
-    data: data,
+    data,
     offset
   }
 }
