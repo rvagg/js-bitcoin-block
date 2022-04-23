@@ -23,6 +23,7 @@
   "scripts": {
     "lint": "standard",
     "build:types": "tsc --build",
+    "build": "npm run build:types",
     "test:browser": "polendina --timeout 320 --runner=mocha --cleanup test/browser.js",
     "test:node": "mocha test/node.js",
     "test": "npm run lint && npm run build:types && npm run test:node",
