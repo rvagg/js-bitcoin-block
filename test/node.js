@@ -19,5 +19,5 @@ for (const hash of hashes) {
     const blockContent = fromHex(await fs.readFile(path.join(__dirname, 'fixtures', `${hash}.hex`), 'utf8'))
     const expectedData = JSON.parse(await fs.readFile(path.join(__dirname, 'fixtures', `${hash}.json`), 'utf8'))
     test(blockContent, expectedData)
-  }).timeout(5000)
+  }).timeout(10000)
 }
