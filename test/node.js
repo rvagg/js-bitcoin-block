@@ -3,8 +3,8 @@
 const fs = require('fs').promises
 const { readdirSync } = require('fs')
 const path = require('path')
-const test = require('./test')
-const { fromHex } = require('../util')
+const test = require('./test.js')
+const { fromHex } = require('../util.js')
 
 // export an async function per block
 const hashes = readdirSync(path.join(__dirname, 'fixtures'))

@@ -2,8 +2,8 @@
 
 // @ts-ignore
 const context = require.context('./fixtures', true, /\.json$/)
-const test = require('./test')
-const { fromHex } = require('../util')
+const test = require('./test.js')
+const { fromHex } = require('../util.js')
 
 for (const key of context.keys()) {
   const hash = key.replace(/^.\/([^.]+)\.json/, '$1')

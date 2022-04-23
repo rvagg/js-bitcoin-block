@@ -1,10 +1,10 @@
 const assert = require('chai').assert
 // pretty diff but expensive for large diffs
 // const assert = require('assert-diff')
-const { BitcoinBlock, BitcoinTransaction } = require('../')
+const { BitcoinBlock, BitcoinTransaction } = require('../bitcoin-block.js')
 
-const { toHashHex, dblSha2256 } = require('../classes/class-utils')
-const { toHex } = require('../util')
+const { toHashHex, dblSha2256 } = require('../classes/class-utils.js')
+const { toHex } = require('../util.js')
 
 /** @typedef {import('../interface').BlockPorcelain} BlockPorcelain */
 /** @typedef {import('../interface').BlockHeaderPorcelain} BlockHeaderPorcelain */
