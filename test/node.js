@@ -12,9 +12,12 @@ const hashes = readdirSync(path.join(__dirname, 'fixtures'))
   .filter(Boolean)
 
 for (const hash of hashes) {
+  if (typeof hash !== 'string') {
+    continue
+  }
   it(hash, async () => {
     const blockContent = fromHex(await fs.readFile(path.join(__dirname, 'fixtures', `${hash}.hex`), 'utf8'))
-    const expectedData = JSON.parse(await fs.readFile(path.join(__dirname, 'fixtures', `${hash}.json`)))
-    test(hash, blockContent, expectedData)
+    const expectedData = JSON.parse(await fs.readFile(path.join(__dirname, 'fixtures', `${hash}.json`), 'utf8'))
+    test(blockContent, expectedData)
   }).timeout(5000)
 }

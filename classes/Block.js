@@ -12,6 +12,10 @@ const { compactSizeSize } = require('../coding')
 const { toHex, concat } = require('../util')
 const BitcoinTransaction = require('./Transaction')
 
+/** @typedef {import('../interface').Encoder} Encoder */
+/** @typedef {import('../interface').BlockPorcelain} BlockPorcelain */
+/** @typedef {import('../interface').BlockHeaderPorcelain} BlockHeaderPorcelain */
+
 /**
  * A class representation of a Bitcoin Block. Parent for all of the data included in the raw block
  * data in addition to some information that can be calculated based on that data. Properties are
@@ -69,44 +73,21 @@ class BitcoinBlock {
     this.tx = tx
     this.size = size
 
-    this._calculateDifficulty()
-    this._calculateStrippedSize()
-    this._calculateWeight()
+    this.difficulty = calculateDifficulty(this.bits)
+    this.strippedsize = calculateStrippedsize(this.tx)
+    this.weight = calculateWeight(this.tx, this.strippedsize, this.size)
   }
 
-  _calculateDifficulty () {
-    // https://github.com/bitcoin/bitcoin/blob/7eed413e72a236b6f1475a198f7063fd24929e23/src/rpc/blockchain.cpp#L67-L87
-    let nshift = (this.bits >> 24) & 0xff
-    let ddiff = 0x0000ffff / (this.bits & 0x00ffffff)
-    while (nshift < 29) {
-      ddiff *= 256
-      nshift++
-    }
-    while (nshift > 29) {
-      ddiff /= 256
-      nshift--
-    }
-    this.difficulty = ddiff
-  }
-
-  _calculateStrippedSize () {
-    this.strippedsize = this.tx
-      ? ((() => {
-          const txLead = compactSizeSize(this.tx.length)
-          const txSizeNoWitness = this.tx.reduce((p, tx) => {
-            p += tx.sizeNoWitness
-            return p
-          }, 0)
-          return 80 + txLead + txSizeNoWitness
-        })())
-      : null
-  }
-
-  _calculateWeight () {
-    this.weight = this.tx ? this.strippedsize * (WITNESS_SCALE_FACTOR - 1) + this.size : null
-  }
-
+  /**
+   * @param {any} _
+   * @param {'min'|'header'|'full'} [type]
+   * @returns {BlockPorcelain|BlockHeaderPorcelain}
+   */
   toJSON (_, type) {
+    if (!this.hash) {
+      throw new Error('Cannot create porcelain on incomplete block')
+    }
+    /** @type {any} */
     const obj = {
       hash: toHashHex(this.hash),
       version: this.version,
@@ -129,20 +110,25 @@ class BitcoinBlock {
     }
 
     if (type === 'header' || this.size === undefined || !this.tx) {
-      return obj
+      return /** @type {BlockHeaderPorcelain} */ obj
     }
 
     obj.size = this.size
     obj.strippedsize = this.strippedsize
     obj.weight = this.weight
     if (type === 'min') {
-      obj.tx = this.tx.map((tx) => toHashHex(tx.txid))
+      obj.tx = this.tx.map((tx) => {
+        if (!tx.txid) {
+          throw new Error('Cannot create porcelain on incomplete transactions')
+        }
+        return toHashHex(tx.txid)
+      })
     } else {
       obj.tx = this.tx.map((tx) => tx.toJSON())
     }
     obj.nTx = this.tx.length
 
-    return obj
+    return /** @type {BlockPorcelain} */ (obj)
   }
 
   /**
@@ -158,6 +144,7 @@ class BitcoinBlock {
    * object returned from this method.
    *
    * @method
+   * @param {'min'|'header'|'full'} [type]
    * @returns {object}
    */
   toPorcelain (type) {
@@ -177,18 +164,22 @@ class BitcoinBlock {
    * alone.
    *
    * @method
-   * @param {Symbol} noWitness calculate the merkle root without witness data (i.e. the standard
+   * @param {Symbol} [noWitness] calculate the merkle root without witness data (i.e. the standard
    * block header `merkleroot` value). Supply `HASH_NO_WITNESS` to activate.
-   * @returns {Promise<Uint8Array>} the merkle root
+   * @returns {Uint8Array} the merkle root
    */
   calculateMerkleRoot (noWitness) {
     if (!this.tx || !this.tx.length) {
       throw new Error('Cannot calculate merkle root without transactions')
     }
-    noWitness = noWitness === HASH_NO_WITNESS
-    const hashes = noWitness ? [] : [new Uint8Array(32)] // coinbase transaction is 0x000... for fill merkle
-    for (let i = noWitness ? 0 : 1; i < this.tx.length; i++) {
-      hashes.push(this.tx[i][noWitness ? 'txid' : 'hash'])
+    const isNoWitness = noWitness === HASH_NO_WITNESS
+    const hashes = isNoWitness ? [] : [new Uint8Array(32)] // coinbase transaction is 0x000... for fill merkle
+    for (let i = isNoWitness ? 0 : 1; i < this.tx.length; i++) {
+      const hash = this.tx[i][isNoWitness ? 'txid' : 'hash']
+      if (!(hash instanceof Uint8Array)) {
+        throw new Error('Cannot calculate Merkle root on incomplete transactions')
+      }
+      hashes.push(hash)
     }
     return merkleRoot(hashes)
   }
@@ -202,7 +193,7 @@ class BitcoinBlock {
    * `scriptWitness` in the coinbase's single vin.
    *
    * @method
-   * @returns {Promise<Uint8Array>} the witness commitment
+   * @returns {Uint8Array} the witness commitment
    */
   calculateWitnessCommitment () {
     if (!this.tx || !this.tx.length) {
@@ -228,7 +219,7 @@ class BitcoinBlock {
    * See {@link BitcoinTransaction#getWitnessCommitment()}
    *
    * @method
-   * @returns {Uint8Array} the witness commitment
+   * @returns {Uint8Array|null} the witness commitment
    */
   getWitnessCommitment () {
     if (!this.tx || !this.tx.length) {
@@ -286,25 +277,27 @@ class BitcoinBlock {
     this._segWit = false
     return false
   }
+
+  // implemented in bitcoin-block.js
+
+  /**
+   * Encode this block into its raw binary form. Assuming you have the complete
+   * block data in this instantiated form.
+   *
+   * It is possible to perform a `decode().encode()` round-trip for any given valid
+   * block data and produce the same binary output.
+   *
+   * @param {HASH_NO_WITNESS} [_noWitness] - any encoding args, currently only
+   * `BitcoinBlock.HASH_NO_WITNESS` is a valid argument, which when provided will
+   * return the block with transactions encoded _without_ witness data.
+   * @name BitcoinBlock#encode
+   * @method
+   * @returns {Uint8Array}
+   */
+  encode (_noWitness) {
+    throw new Error('Unimplemented, BitcoinBlock was not loaded properly')
+  }
 }
-
-// from bitcoin-block.js
-
-/**
- * Encode this block into its raw binary form. Assuming you have the complete
- * block data in this instantiated form.
- *
- * It is possible to perform a `decode().encode()` round-trip for any given valid
- * block data and produce the same binary output.
- *
- * @param {object} args - any encoding args, currently only
- * `BitcoinBlock.HASH_NO_WITNESS` is a valid argument, which when provided will
- * return the block with transactions encoded _without_ witness data.
- * @name BitcoinBlock#encode
- * @method
- * @returns {Uint8Array}
- */
-BitcoinBlock.prototype.encode = null
 
 /**
  * Symbol used as a flag for {@link Block#calculateMerkleRoot} to calculate the merkle root without
@@ -331,7 +324,7 @@ BitcoinBlock.HASH_NO_WITNESS = HASH_NO_WITNESS
  * A `tx` array indicates that full block data is present and it should attempt to decode the entire
  * structure.
  *
- * @param {object} porcelain the porcelain form of a Bitcoin block
+ * @param {BlockPorcelain | BlockHeaderPorcelain} porcelain the porcelain form of a Bitcoin block
  * @returns {BitcoinBlock}
  * @function
  */
@@ -353,18 +346,23 @@ BitcoinBlock.fromPorcelain = function fromPorcelain (porcelain) {
   if (typeof porcelain.time !== 'number') {
     throw new TypeError('time property must be a number')
   }
-  if (typeof porcelain.nonce !== 'number') {
+  if (!('nonce' in porcelain) || typeof porcelain.nonce !== 'number') {
     throw new TypeError('nonce property must be a number')
   }
   if (typeof porcelain.bits !== 'string' && !/^[0-9a-f]+$/.test(porcelain.bits)) {
     throw new TypeError('bits property must be a hex string')
   }
   let tx
-  if (porcelain.tx) {
+  if ('tx' in porcelain) {
     if (!Array.isArray(porcelain.tx)) {
       throw new TypeError('tx property must be an array')
     }
-    tx = porcelain.tx.map(BitcoinTransaction.fromPorcelain)
+    tx = porcelain.tx.map((txPorc) => {
+      if (typeof txPorc !== 'object') {
+        throw new Error('Cannot create transactions from incomplete porcelain')
+      }
+      return BitcoinTransaction.fromPorcelain(txPorc)
+    })
   }
   const block = new BitcoinBlock(
     porcelain.version,
@@ -372,8 +370,8 @@ BitcoinBlock.fromPorcelain = function fromPorcelain (porcelain) {
     fromHashHex(porcelain.merkleroot),
     porcelain.time,
     parseInt(porcelain.bits, 16),
-    porcelain.nonce,
-    null, // hash
+    /** @type {number} */ porcelain.nonce,
+    undefined, // hash
     tx
   )
 
@@ -386,8 +384,8 @@ BitcoinBlock.fromPorcelain = function fromPorcelain (porcelain) {
   block.hash = dblSha2256(rawData.slice(0, 80))
   if (tx) {
     block.size = rawData.length
-    block._calculateStrippedSize()
-    block._calculateWeight()
+    block.strippedsize = calculateStrippedsize(block.tx)
+    block.weight = calculateWeight(block.tx, block.strippedsize, block.size)
   }
 
   return block
@@ -422,10 +420,20 @@ uint32_t nonce;
 _customEncodeTransactions
 `)
 
-BitcoinBlock._customDecoderMarkStart = function (decoder, properties, state) {
+/**
+ * @param {*} decoder
+ * @param {Record<string, any>} _
+ * @param {Record<string, any>} state
+ */
+BitcoinBlock._customDecoderMarkStart = function (decoder, _, state) {
   state.blockStartPos = decoder.currentPosition()
 }
 
+/**
+ * @param {*} decoder
+ * @param {Record<string, any>} properties
+ * @param {Record<string, any>} state
+ */
 BitcoinBlock._customDecodeHash = function (decoder, properties, state) {
   const start = state.blockStartPos
   const end = decoder.currentPosition()
@@ -434,6 +442,11 @@ BitcoinBlock._customDecodeHash = function (decoder, properties, state) {
   properties.push(digest)
 }
 
+/**
+ * @param {*} decoder
+ * @param {Record<string, any>} properties
+ * @param {Record<string, any>} state
+ */
 BitcoinBlock._customDecodeSize = function (decoder, properties, state) {
   const start = state.blockStartPos
   const end = decoder.currentPosition()
@@ -441,6 +454,11 @@ BitcoinBlock._customDecodeSize = function (decoder, properties, state) {
   properties.push(size)
 }
 
+/**
+ * @param {BitcoinBlock} block
+ * @param {Encoder} encoder
+ * @param {any[]} args
+ */
 BitcoinBlock._customEncodeTransactions = function * (block, encoder, args) {
   if (Array.isArray(block.tx)) {
     yield * encoder('std::vector<CTransaction>', block.tx, args)
@@ -486,8 +504,8 @@ module.exports.BitcoinBlockHeaderOnly = BitcoinBlockHeaderOnly
  * Use this if you have the full block hash, otherwise use {@link BitcoinBlock.decodeBlockHeaderOnly}
  * to parse just the 80-byte header data.
  *
- * @param {Uint8Array} bytes - the raw bytes of the block to be decoded.
- * @param {boolean} strictLengthUsage - ensure that all bytes were consumed during decode.
+ * @param {Uint8Array} _bytes - the raw bytes of the block to be decoded.
+ * @param {boolean} [_strictLengthUsage] - ensure that all bytes were consumed during decode.
  * This is useful when ensuring that bytes have been properly decoded where there is
  * uncertainty about whether the bytes represent a Block or not. Switch to `true` to be
  * sure.
@@ -495,7 +513,7 @@ module.exports.BitcoinBlockHeaderOnly = BitcoinBlockHeaderOnly
  * @function
  * @returns {BitcoinBlock}
  */
-BitcoinBlock.decode = null
+BitcoinBlock.decode = (_bytes, _strictLengthUsage) => { throw new Error('Unimplemented') }
 
 /**
  * Decode only the header section of a {@link BitcoinBlock} from the raw bytes of the block.
@@ -508,9 +526,61 @@ BitcoinBlock.decode = null
  * `BitcoinBlock` and may be used as such. Just don't expect it to give you
  * any transaction data beyond the merkle root.
  *
- * @param {Uint8Array} bytes - the raw bytes of the block to be decoded.
+ * @param {Uint8Array} _bytes - the raw bytes of the block to be decoded.
+ * @param {boolean} [_strictLengthUsage]
  * @name BitcoinBlock.decodeBlockHeaderOnly
  * @function
  * @returns {BitcoinBlock}
  */
-BitcoinBlock.decodeBlockHeaderOnly = null
+BitcoinBlock.decodeHeaderOnly = (_bytes, _strictLengthUsage) => { throw new Error('Unimplemented') }
+
+/**
+ * @param {number} bits
+ * @returns {number}
+ */
+function calculateDifficulty (bits) {
+  // https://github.com/bitcoin/bitcoin/blob/7eed413e72a236b6f1475a198f7063fd24929e23/src/rpc/blockchain.cpp#L67-L87
+  let nshift = (bits >> 24) & 0xff
+  let ddiff = 0x0000ffff / (bits & 0x00ffffff)
+  while (nshift < 29) {
+    ddiff *= 256
+    nshift++
+  }
+  while (nshift > 29) {
+    ddiff /= 256
+    nshift--
+  }
+  return ddiff
+}
+
+/**
+ * @param {Array.<BitcoinTransaction>} [tx]
+ * @returns {number|undefined}
+ */
+function calculateStrippedsize (tx) {
+  if (!tx) {
+    return undefined
+  }
+  const txLead = compactSizeSize(tx.length)
+  const txSizeNoWitness = tx.reduce((p, tx) => {
+    if (!tx.sizeNoWitness) {
+      throw new Error('Cannot calculate stripped size with incomplete transactions')
+    }
+    p += tx.sizeNoWitness
+    return p
+  }, 0)
+  return 80 + txLead + txSizeNoWitness
+}
+
+/**
+ * @param {Array.<BitcoinTransaction>|undefined} tx
+ * @param {number|undefined} strippedsize
+ * @param {number|undefined} size
+ * @returns {number|undefined}
+ */
+function calculateWeight (tx, strippedsize, size) {
+  if (!tx || strippedsize == null || size == null) {
+    return undefined
+  }
+  return strippedsize * (WITNESS_SCALE_FACTOR - 1) + size
+}

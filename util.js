@@ -1,3 +1,7 @@
+/**
+ * @param {Uint8Array[]} buffers
+ * @returns {Uint8Array}
+ */
 function concat (buffers) {
   if (!buffers.length) {
     return new Uint8Array(0)
@@ -30,6 +34,10 @@ const hexSliceLookupTable = (function () {
   return table
 })()
 
+/**
+ * @param {Uint8Array} buf
+ * @returns {string}
+ */
 function toHex (buf) {
   let ret = ''
   for (let i = 0; i < buf.length; i++) {
@@ -38,6 +46,10 @@ function toHex (buf) {
   return ret
 }
 
+/**
+ * @param {string} hex
+ * @returns {Uint8Array}
+ */
 function fromHex (hex) {
   const buf = new Uint8Array(hex.length / 2)
   for (let i = 0; i < hex.length / 2; i++) {

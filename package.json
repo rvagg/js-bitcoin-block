@@ -4,25 +4,29 @@
   "description": "A Bitcoin block interface and decoder for JavaScript",
   "main": "bitcoin-block.js",
   "dependencies": {
-    "@rvagg/ripemd160": "^2.1.1",
+    "@rvagg/ripemd160": "^2.2.1",
     "@stablelib/sha256": "^1.0.1",
     "assert": "^2.0.0",
     "bech32": "^2.0.0",
     "multiformats": "^9.6.4"
   },
   "devDependencies": {
+    "@types/chai": "^4.3.0",
+    "@types/mocha": "^9.1.0",
     "chai": "^4.3.6",
     "jsdoc4readme": "^1.4.0",
     "mocha": "^9.2.0",
     "polendina": "^2.0.11",
-    "standard": "^16.0.4"
+    "standard": "^16.0.4",
+    "typescript": "^4.5.5"
   },
   "scripts": {
     "lint": "standard",
+    "build:types": "tsc --build",
     "test:browser": "polendina --timeout 320 --runner=mocha --cleanup test/browser.js",
     "test:node": "mocha test/node.js",
-    "test": "npm run lint && npm run test:node",
-    "test:ci": "npm run test && npm run test:browser",
+    "test": "npm run lint && npm run build:types && npm run test:node",
+    "test:ci": "npm run test && npm test:browser",
     "docs": "jsdoc4readme --readme bitcoin-block.js classes/class-utils.js classes/Block.js classes/Transaction.js classes/TransactionIn.js classes/TransactionOut.js"
   },
   "bin": {
@@ -37,5 +41,12 @@
   "bugs": {
     "url": "https://github.com/rvagg/js-bitcoin-block/issues"
   },
-  "homepage": "https://github.com/rvagg/js-bitcoin-block#readme"
+  "homepage": "https://github.com/rvagg/js-bitcoin-block#readme",
+  "typesVersions": {
+    "*": {
+      "*": [
+        "types/*"
+      ]
+    }
+  }
 }

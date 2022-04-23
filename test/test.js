@@ -6,13 +6,24 @@ const { BitcoinBlock, BitcoinTransaction } = require('../')
 const { toHashHex, dblSha2256 } = require('../classes/class-utils')
 const { toHex } = require('../util')
 
-// round difficulty to 2 decimal places, it's a calculated value
+/** @typedef {import('../interface').BlockPorcelain} BlockPorcelain */
+/** @typedef {import('../interface').BlockHeaderPorcelain} BlockHeaderPorcelain */
+
+/**
+ * round difficulty to 2 decimal places, it's a calculated value
+ * @param {any} obj
+ * @returns {any}
+ */
 function roundDifficulty (obj) {
   const ret = Object.assign({}, obj)
   ret.difficulty = Math.round(obj.difficulty * 100) / 100
   return ret
 }
 
+/**
+ * @param {any} obj
+ * @returns {any}
+ */
 function cleanExpectedBlock (obj) {
   // clean up expected data, removing pieces we can't get without additional context
   delete obj.mediantime // depends on past blocks
@@ -23,6 +34,10 @@ function cleanExpectedBlock (obj) {
   return obj
 }
 
+/**
+ * @param {any} obj
+ * @returns {any}
+ */
 function cleanActualBlock (obj) {
   if (obj.tx && obj.tx[0]) {
     cleanActualTransaction(obj.tx[0], 0)
@@ -30,6 +45,11 @@ function cleanActualBlock (obj) {
   return obj
 }
 
+/**
+ * @param {any} obj
+ * @param {number} i
+ * @returns {any}
+ */
 function cleanActualTransaction (obj, i) {
   if (i === 0 && obj.vin.length && obj.vin[0].txinwitness) {
     // get rid of coinbase txinwitness, the bitcoin cli doesn't show this but it's
@@ -39,23 +59,31 @@ function cleanActualTransaction (obj, i) {
   return obj
 }
 
+/**
+ * @param {any} obj
+ * @returns {any}
+ */
 function toMinimalExpected (obj) {
   const ret = Object.assign({}, obj)
-  ret.tx = obj.tx.map((tx) => tx.txid)
+  ret.tx = obj.tx.map((/** @type {any} */ tx) => tx.txid)
   return ret
 }
 
+/**
+ * @param {Uint8Array} block
+ * @param {any} expectedComplete
+ */
 function verifyHeader (block, expectedComplete) {
   const headerData = block.slice(0, 80)
   const decodedHeader = BitcoinBlock.decodeHeaderOnly(block)
 
   // just the pieces we expect from a header
-  const expected = 'hash version versionHex merkleroot time nonce bits previousblockhash difficulty'.split(' ').reduce((p, c) => {
+  const expected = 'hash version versionHex merkleroot time nonce bits previousblockhash difficulty'.split(' ').reduce((/** @type {Record<string, any>} */ p, c) => {
     if (expectedComplete[c] !== undefined) {
       p[c] = expectedComplete[c]
     }
     return p
-  }, {})
+  }, /** @type {Record<string, any>} */ {})
   assert.deepStrictEqual(roundDifficulty(decodedHeader.toPorcelain()), roundDifficulty(expected), 'decoded header data')
 
   // re-encode
@@ -63,33 +91,46 @@ function verifyHeader (block, expectedComplete) {
   assert.strictEqual(toHex(encodedHeader), toHex(headerData), 're-encoded block header')
 
   // instantiate new
-  const newHeader = BitcoinBlock.fromPorcelain(Object.assign({}, decodedHeader.toPorcelain()))
+  const newHeader = BitcoinBlock.fromPorcelain(/** @type {BlockHeaderPorcelain|BlockPorcelain} */(Object.assign({}, decodedHeader.toPorcelain())))
   assert.deepStrictEqual(roundDifficulty(newHeader.toPorcelain()), roundDifficulty(expected), 're-instantiated header data')
   // encode newly instantiated
   const encodedNewHeader = newHeader.encode()
   assert.strictEqual(toHex(encodedNewHeader), toHex(headerData), 're-instantiated and encoded block header')
 }
 
+/**
+ * @param {any} decoded
+ * @param {any} expected
+ */
 function verifyMinimalForm (decoded, expected) {
   const serializableMin = decoded.toPorcelain('min')
   const minimalExpected = toMinimalExpected(expected)
   assert.deepStrictEqual(roundDifficulty(serializableMin), roundDifficulty(minimalExpected))
 }
 
+/**
+ * @param {any} decoded
+ * @param {any} expected
+ */
 function verifyMaximalForm (decoded, expected) {
   const serializable = cleanActualBlock(decoded.toPorcelain())
   assert.deepStrictEqual(roundDifficulty(serializable), roundDifficulty(expected))
 }
 
+/**
+ * @param {any} decoded
+ * @param {any} expected
+ * @param {Uint8Array} block
+ */
 function verifyRoundTrip (decoded, expected, block) {
   // instantiate new
   const from = Object.assign({}, decoded.toPorcelain())
-  from.tx = from.tx.map((tx) => Object.assign({}, tx))
+  from.tx = from.tx.map((/** @type {any} */ tx) => Object.assign({}, tx))
   const newBlock = BitcoinBlock.fromPorcelain(from)
   /* for debugging JSON output
-  require('fs').writeFileSync('act.json', JSON.stringify(Object.assign({}, newBlock.toPorcelain()), null, 2), 'utf8')
-  require('fs').writeFileSync('exp.json', JSON.stringify(Object.assign({}, expected), null, 2), 'utf8')
-  */
+  require('fs').writeFileSync('act.json', JSON.stringify(Object.assign({}, roundDifficulty(cleanActualBlock(newBlock.toPorcelain()))), null, 2), 'utf8')
+  require('fs').writeFileSync('exp.json', JSON.stringify(Object.assign({}, roundDifficulty(expected)), null, 2), 'utf8')
+  /**/
   const newBlockClean = roundDifficulty(cleanActualBlock(newBlock.toPorcelain()))
   assert.deepStrictEqual(newBlockClean, roundDifficulty(expected), 're-instantiated data')
   // encode newly instantiated
@@ -109,6 +150,11 @@ function verifyRoundTrip (decoded, expected, block) {
   assert.strictEqual(toHex(encodedNew), toHex(block), 're-instantiated and encoded block')
 }
 
+/**
+ * @param {any} tx
+ * @param {any} expectedTx
+ * @param {number} i
+ */
 function verifyTransactionRoundTrip (tx, expectedTx, i) {
   // instantiate new
   const newTransaction = BitcoinTransaction.fromPorcelain(Object.assign({}, tx.toPorcelain()))
@@ -122,6 +168,12 @@ function verifyTransactionRoundTrip (tx, expectedTx, i) {
   assert.strictEqual(toHex(encodedNew), expectedTx.hex, `re-instantiated and encoded transaction (${i})`)
 }
 
+/**
+ * @param {any} tx
+ * @param {any} expectedTx
+ * @param {number} i
+ * @returns {boolean}
+ */
 function verifyTransaction (tx, expectedTx, i) {
   // hash & txid correct? (early sanity check)
   assert.strictEqual(toHashHex(tx.txid), expectedTx.txid)
@@ -172,12 +224,19 @@ function verifyTransaction (tx, expectedTx, i) {
   }
 }
 
+/**
+ * @param {any} decoded
+ * @param {any} expected
+ */
 function verifyMerkleRoot (decoded, expected) {
   const merkleRootNoWitness = toHashHex(decoded.calculateMerkleRoot(BitcoinBlock.HASH_NO_WITNESS))
   assert.strictEqual(merkleRootNoWitness, expected.merkleroot, 'calculated merkle root')
 }
 
-function verifyWitnessCommitment (decoded, expected) {
+/**
+ * @param {any} decoded
+ */
+function verifyWitnessCommitment (decoded) {
   // find the expected witness commitment [hash(nonce + full merkle root)] in the first transaction
   // and compare it to one we calculate from the nonce in the coinbase + our own calculated full merkle root
   const expectedWitnessCommitment = decoded.getWitnessCommitment()
@@ -189,7 +248,11 @@ function verifyWitnessCommitment (decoded, expected) {
   }
 }
 
-function test (hash, block, expected) {
+/**
+ * @param {any} block
+ * @param {any} expected
+ */
+function test (block, expected) {
   // ---------------------------------------------------------------------------
   // prepare exepected data (trim fat we can't / won't test)
   cleanExpectedBlock(expected)
@@ -209,7 +272,10 @@ function test (hash, block, expected) {
   // in detail, doing this before testing maximal form shows up errors early and
   // pin-points them
   let hasSegWit = false
-  for (let i = 0; i < expected.tx.length; i++) {
+  assert.isDefined(decoded.tx)
+  // @ts-ignore: TS2532: Object is possibly 'undefined'.
+  assert.equal(decoded.tx.length, expected.tx.length)
+  for (let i = 0; decoded.tx && i < expected.tx.length; i++) {
     const tx = decoded.tx[i]
     const expectedTx = expected.tx[i]
 
@@ -235,7 +301,7 @@ function test (hash, block, expected) {
   // (only for `nHeight >= consensusParams.SegwitHeight` (481824))
   assert(decoded.isSegWit() === hasSegWit, `expected isSegWit(): ${hasSegWit}`) // is this a segwit transaction?
   if (hasSegWit) {
-    verifyWitnessCommitment(decoded, expected)
+    verifyWitnessCommitment(decoded)
   }
 
   verifyRoundTrip(decoded, expected, block)

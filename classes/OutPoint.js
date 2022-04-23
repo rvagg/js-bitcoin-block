@@ -15,8 +15,8 @@ class BitcoinOutPoint {
    *
    * See the class properties for expanded information on these parameters.
    *
-   * @property {Uint8Array} hash
-   * @property {number} n
+   * @param {Uint8Array} hash
+   * @param {number} n
    * @constructs BitcoinOutPoint
    */
   constructor (hash, n) {

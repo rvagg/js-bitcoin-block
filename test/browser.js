@@ -1,5 +1,6 @@
 /* eslint-env mocha */
 
+// @ts-ignore
 const context = require.context('./fixtures', true, /\.json$/)
 const test = require('./test')
 const { fromHex } = require('../util')
@@ -13,6 +14,6 @@ for (const key of context.keys()) {
     const blockHex = (await import(`!!raw-loader!./fixtures/${hash}.hex`)).default
     const block = fromHex(blockHex.replace(/\n/g, ''))
 
-    test(hash, block, data)
+    test(block, data)
   }).timeout(5000)
 }

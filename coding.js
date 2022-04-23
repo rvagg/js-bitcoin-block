@@ -1,7 +1,16 @@
 const { toHex } = require('./util')
+/** @type {Record<string, any>} */
 const classRegistry = {}
 
+/** @typedef {import('./interface').Encoder} Encoder */
+/** @typedef {import('./interface').ValueEncoder} ValueEncoder */
+/** @typedef {import('./interface').Decoder} Decoder */
+
 // https://github.com/zcash/zcash/blob/fa1b656482a38d3a6c97950b35521a9c45da1e9c/src/serialize.h#L264
+/**
+ * @param {number} size
+ * @returns {Uint8Array}
+ */
 function writeCompactSize (size) {
   if (size < 253) {
     return Uint8Array.from([size])
@@ -24,6 +33,10 @@ function writeCompactSize (size) {
   }
 }
 
+/**
+ * @param {number} size
+ * @returns {number}
+ */
 function compactSizeSize (size) {
   if (size < 253) {
     return 1
@@ -37,6 +50,7 @@ function compactSizeSize (size) {
   }
 }
 
+/** @type {Record<string, ValueEncoder>} */
 const encoders = {
   int32_t: function * writeInt32LE (v) {
     if (typeof v !== 'number') {
@@ -110,6 +124,9 @@ const encoders = {
     yield buf
   },
 
+  /**
+   * @param {Uint8Array} v
+   */
   slice: function * writeSlice (v) {
     if (!(v instanceof Uint8Array)) {
       throw new Error('Encoding slice requires a "Uint8Array" type')
@@ -121,6 +138,9 @@ const encoders = {
   }
 }
 
+/**
+ * @type {Encoder}
+ */
 function * encoder (typ, value, args) {
   // aliases
   if (typ === 'std::vector<unsigned char>' || typ === 'CScript') {
@@ -167,7 +187,7 @@ function * encoder (typ, value, args) {
     for (const v of arr) {
       yield * encoder(arrayType, v, args)
     }
-  } else if (encoders[typ]) {
+  } else if (typ in encoders) {
     yield * encoders[typ](value)
   } else if (classRegistry[typ]) {
     yield * encodeType(value, args)
@@ -176,6 +196,11 @@ function * encoder (typ, value, args) {
   }
 }
 
+/**
+ * @param {any} obj
+ * @param {any} args
+ * @returns {any}
+ */
 function * encodeType (obj, args) {
   const clazz = Object.getPrototypeOf(obj).constructor
   const properties = clazz._encodePropertiesDescriptor
@@ -193,7 +218,7 @@ function * encodeType (obj, args) {
     }
 
     const value = obj[prop.name]
-    yield * encoder(typ, value, prop.name, args)
+    yield * encoder(typ, value, args)
   }
 }
 
@@ -235,37 +260,63 @@ function readCompactSize (buf, offset) {
   }
 }
 
+/**
+ * @param {string} typ
+ * @returns {string}
+ */
 function isVectorType (typ) {
   const isVector = typ.startsWith('std::vector<')
-  const vectorType = isVector && typ.replace(/std::vector<([^>]+)>/, '$1')
-  return vectorType
+  return isVector ? typ.replace(/std::vector<([^>]+)>/, '$1') : ''
 }
 
+/**
+ * @param {string} typ
+ * @returns {RegExpMatchArray|null}
+ */
 function isArrayType (typ) {
   const isArray = typ.startsWith('std::array<')
-  const arrayDesc = isArray && typ.match(/std::array<([^,]+),\s*(\d+)>/)
-  return arrayDesc
+  return isArray ? typ.match(/std::array<([^,]+),\s*(\d+)>/) : null
 }
 
+/**
+ * @param {number} actual
+ * @param {number} expected
+ */
 function assertSize (actual, expected) {
   if (actual < expected) {
     throw new Error(`decode expected to read ${expected} bytes but only ${actual} where available`)
   }
 }
 
+/**
+ * @param {Uint8Array} read
+ * @param {number} expected
+ * @returns {Uint8Array}
+ */
 function sizeAsserted (read, expected) {
   assertSize(read.length, expected)
   return read
 }
 
+/**
+ * @param {Uint8Array} buf
+ * @param {string} type
+ * @param {boolean} [strictLengthUsage]
+ * @returns {any}
+ */
 function decodeType (buf, type, strictLengthUsage) {
   let pos = 0
+  /** @type {Record<string, any>} */
   const state = {}
 
+  /**
+   * @param {number} want
+   */
   function assertAvailable (want) {
     assertSize(buf.length - pos, want)
   }
 
+  /** @type {Decoder} */
   const decoder = {
     currentPosition () {
       return pos
@@ -323,32 +374,58 @@ function decodeType (buf, type, strictLengthUsage) {
       return i
     },
 
+    /**
+     * @param {number} len
+     * @returns {Uint8Array}
+     */
     peek (len) {
       return sizeAsserted(buf.slice(pos, pos + len), len)
     },
 
+    /**
+     * @param {number} len
+     * @returns {Uint8Array}
+     */
     slice (len) {
       return sizeAsserted(buf.slice(pos, pos += len), len) // eslint-disable-line
     },
 
+    /**
+     * @param {number} start
+     * @param {number} len
+     * @returns {Uint8Array}
+     */
     absoluteSlice (start, len) {
       return sizeAsserted(buf.slice(start, start + len), len)
     },
 
+    /**
+     * @returns {Uint8Array}
+     */
     readHash () {
       return decoder.slice(32)
     },
 
+    /**
+     * @returns {number}
+     */
     readCompactInt () {
       const [i, bytesRead] = readCompactSize(buf, pos)
       pos += bytesRead
       return i
     },
 
+    /**
+     * @returns {Uint8Array}
+     */
     readCompactSlice () {
       return decoder.slice(decoder.readCompactInt())
     },
 
+    /**
+     * @param {string} type
+     * @returns {any}
+     */
     readType (type) {
       // a class we know
       if (classRegistry[type]) {
@@ -396,7 +473,7 @@ function decodeType (buf, type, strictLengthUsage) {
       }
 
       if (type.startsWith('std::array<unsigned char,')) {
-        const length = parseInt(type.replace(/^std::array<unsigned char,\s*(\d+)>$/, '$1', 10))
+        const length = parseInt(type.replace(/^std::array<unsigned char,\s*(\d+)>$/, '$1'), 10)
         return decoder.slice(length)
       }
 
@@ -451,6 +528,10 @@ function decodeType (buf, type, strictLengthUsage) {
       }
     },
 
+    /**
+     * @param {any} clazz
+     * @returns {any}
+     */
     readClass (clazz) {
       const properties = []
       for (const property of clazz._decodePropertiesDescriptor) {
@@ -476,6 +557,9 @@ function decodeType (buf, type, strictLengthUsage) {
   return block
 }
 
+/**
+ * @param {Record<string, any>} classes
+ */
 function setup (classes) {
   // const classes = require('./classes/')
   Object.values(classes).reduce((p, c) => {

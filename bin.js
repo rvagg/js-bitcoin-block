@@ -1,18 +1,23 @@
 #!/usr/bin/env node
 
 const { Transform } = require('stream')
-const fs = require('fs').promises
-fs.constants = require('fs').constants
-fs.createReadStream = require('fs').createReadStream
+const { createReadStream } = require('fs')
 const { BitcoinBlock } = require('./')
 
+/** @typedef {import('fs').ReadStream} ReadStream */
+
+/**
+ * @param {ReadStream} stream
+ * @returns {Promise<Buffer>}
+ */
 async function streamToBuffer (stream) {
   return new Promise((resolve, reject) => {
+    /** @type {Uint8Array[]} */
     const chunks = []
     stream
       .on('error', reject)
       .pipe(new Transform({
-        transform (chunk, encoding, callback) {
+        transform (chunk, _, callback) {
           chunks.push(chunk)
           callback()
         }
@@ -24,6 +29,10 @@ async function streamToBuffer (stream) {
   })
 }
 
+/**
+ * @param {Buffer} buf
+ * @returns {Buffer}
+ */
 function ensureBinary (buf) {
   for (let i = 0; i < buf.length; i++) {
     if (buf[i] < 48 || buf[i] > 102) { // not hex
@@ -34,6 +43,10 @@ function ensureBinary (buf) {
   return Buffer.from(buf.toString('ascii'), 'hex')
 }
 
+/**
+ * @param {ReadStream} stream
+ * @param {'min'|'header'|'full'} [type]
+ */
 async function toJson (stream, type) {
   let block = await streamToBuffer(stream)
   block = ensureBinary(block)
@@ -44,8 +57,8 @@ async function toJson (stream, type) {
 
 async function run () {
   if (process.argv[2] === 'to-json' || process.argv[2] === 'to-json-min') {
-    const stream = process.argv.length > 3 ? fs.createReadStream(process.argv[3]) : process.stdin
-    await toJson(stream, process.argv[2] === 'to-json-min' ? 'min' : 'full')
+    const stream = process.argv.length > 3 ? createReadStream(process.argv[3]) : process.stdin
+    await toJson(/** @type {ReadStream} */ (stream), process.argv[2] === 'to-json-min' ? 'min' : 'full')
   } else {
     console.error(`No such command [${process.argv[2] || ''}]`)
     console.error('Usage: bitcoin-block <to-json | to-json-min> [file]    (or stdin)')

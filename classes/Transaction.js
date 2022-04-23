@@ -12,6 +12,10 @@ const BitcoinTransactionIn = require('./TransactionIn')
 const BitcoinTransactionOut = require('./TransactionOut')
 const { toHex, concat } = require('../util')
 
+/** @typedef {import('../interface').Decoder} Decoder */
+/** @typedef {import('../interface').Encoder} Encoder */
+/** @typedef {import('../interface').TransactionPorcelain} TransactionPorcelain */
+
 /**
  * A class representation of a Bitcoin Transaction, multiple of which are contained within each
  * {@link BitcoinBlock}.
@@ -43,7 +47,7 @@ class BitcoinTransaction {
    * @param {number} version
    * @param {boolean} segWit
    * @param {Array.<BitcoinTransactionIn>} vin
-   * @param {Array.<BitcoinTransactionIn>} vout
+   * @param {Array.<BitcoinTransactionOut>} vout
    * @param {number} lockTime
    * @param {Uint8Array} [rawBytes]
    * @param {Uint8Array} [hash]
@@ -74,7 +78,13 @@ class BitcoinTransaction {
     }
   }
 
+  /**
+   * @returns {TransactionPorcelain}
+   */
   toJSON () {
+    if (this.hash == null || this.txid == null || this.size == null || this.vsize == null || this.weight == null || this.rawBytes == null) {
+      throw new Error('Cannot create porcelain from incomplete transaction')
+    }
     const coinbase = this.isCoinbase()
     const obj = {
       txid: toHashHex(this.txid),
@@ -143,7 +153,7 @@ class BitcoinTransaction {
    * `scriptPubKey` of the vout before being returned by this method.
    *
    * @method
-   * @returns {Uint8Array} the witness commitment
+   * @returns {Uint8Array|null} the witness commitment
    */
   getWitnessCommitment () {
     const wci = this.getWitnessCommitmentIndex()
@@ -168,7 +178,7 @@ class BitcoinTransaction {
    * witness commitment.
    *
    * @method
-   * @returns {Uint8Array} the witness commitment
+   * @returns {Uint8Array|null} the witness commitment
    */
   getWitnessCommitmentNonce () {
     if (!this.isCoinbase() || !this.segWit) {
@@ -205,36 +215,58 @@ class BitcoinTransaction {
     }
     return false
   }
+
+  // implemented in bitcoin-block.js
+
+  /**
+   * Encode this transaction into its raw binary form. Assuming you have the complete
+   * transaction data in this instantiated form.
+   *
+   * It is possible to perform a `decode().encode()` round-trip for any given valid
+   * transaction data and produce the same binary output.
+   *
+   * @param {HASH_NO_WITNESS} [_noWitness] - any encoding args, currently only
+   * `BitcoinTransaction.HASH_NO_WITNESS` is a valid argument, which when provided will
+   * return the transaction encoded _without_ witness data. When encoded without
+   * witness data, the resulting binary data can be double SHA2-256 hashed to produce
+   * the `txid` which is used in the transaction merkle root stored in the header,
+   * while the binary data from a full transaction will produce the `hash` which is
+   * used in the witness merkle and witness commitment.
+   * @name BitcoinTransaction#encode
+   * @method
+   * @returns {Uint8Array}
+   */
+  encode (_noWitness) {
+    throw new Error('Unimplemented, BitcoinBlock was not loaded properly')
+  }
 }
 
-// from bitcoin-block.js
+// implemented in bitcoin-block.js
 
 /**
- * Encode this transaction into its raw binary form. Assuming you have the complete
- * transaction data in this instantiated form.
+ * Decode a {@link BitcoinTransaction} from the raw bytes of the transaction.
+ * Normally raw transaction data isn't available in detached form, although the
+ * hex is available in the JSON output provided by the bitcoin cli attached to
+ * each element of the `tx` array. It may also come from the
+ * {@link BitcoinTransaction#encode} method.
  *
- * It is possible to perform a `decode().encode()` round-trip for any given valid
- * transaction data and produce the same binary output.
- *
- * @param {object} args - any encoding args, currently only
- * `BitcoinTransaction.HASH_NO_WITNESS` is a valid argument, which when provided will
- * return the transaction encoded _without_ witness data. When encoded without
- * witness data, the resulting binary data can be double SHA2-256 hashed to produce
- * the `txid` which is used in the transaction merkle root stored in the header,
- * while the binary data from a full transaction will produce the `hash` which is
- * used in the witness merkle and witness commitment.
- * @name BitcoinTransaction#encode
- * @method
- * @returns {Uint8Array}
+ * @param {Uint8Array} _bytes - the raw bytes of the transaction to be decoded.
+ * @param {boolean} _strictLengthUsage - ensure that all bytes were consumed during decode.
+ * This is useful when ensuring that bytes have been properly decoded where there is
+ * uncertainty about whether the bytes represent a Transaction or not. Switch to `true`
+ * to be sure.
+ * @name BitcoinTransaction.decode
+ * @returns {BitcoinTransaction}
+ * @function
  */
-BitcoinTransaction.prototype.encode = null
+BitcoinTransaction.decode = (_bytes, _strictLengthUsage) => { throw new Error('Unimplemented') }
 
 /**
  * Check if the porcelain form of a transaction is has witness data and is therefore
  * post-SegWit.
  *
  * @function
- * @param {object} porcelain form of a transaction
+ * @param {TransactionPorcelain} porcelain form of a transaction
  * @returns {boolean}
  */
 BitcoinTransaction.isPorcelainSegWit = function isPorcelainSegWit (porcelain) {
@@ -279,7 +311,7 @@ BitcoinTransaction.isPorcelainSegWit = function isPorcelainSegWit (porcelain) {
  *   and not derivable from standard block data)
  *
  * @function
- * @param porcelain the porcelain form of a BitcoinTransaction
+ * @param {TransactionPorcelain} porcelain the porcelain form of a BitcoinTransaction
  * @returns {BitcoinTransaction}
  */
 BitcoinTransaction.fromPorcelain = function fromPorcelain (porcelain) {
@@ -303,13 +335,13 @@ BitcoinTransaction.fromPorcelain = function fromPorcelain (porcelain) {
 
   const vin = porcelain.vin.map(BitcoinTransactionIn.fromPorcelain)
   if (segWit) {
-    const coinbase = !!porcelain.vin[0].coinbase
+    const coinbase = 'coinbase' in porcelain.vin[0]
     for (let i = coinbase ? 1 : 0; i < vin.length; i++) {
       if (!vin[i].scriptWitness) {
         vin[i].scriptWitness = []
       }
     }
-    if (porcelain.vin[0].coinbase && !vin[0].scriptWitness) {
+    if (coinbase && !vin[0].scriptWitness) {
       vin[0].scriptWitness = [new Uint8Array(32)] // assume default null, good guess, but still a guess
     }
   }
@@ -340,25 +372,6 @@ BitcoinTransaction.fromPorcelain = function fromPorcelain (porcelain) {
 
 BitcoinTransaction.HASH_NO_WITNESS = HASH_NO_WITNESS
 
-// from bitcoin-block.js
-/**
- * Decode a {@link BitcoinTransaction} from the raw bytes of the transaction.
- * Normally raw transaction data isn't available in detached form, although the
- * hex is available in the JSON output provided by the bitcoin cli attached to
- * each element of the `tx` array. It may also come from the
- * {@link BitcoinTransaction#encode} method.
- *
- * @param {Uint8Array} bytes - the raw bytes of the transaction to be decoded.
- * @param {boolean} strictLengthUsage - ensure that all bytes were consumed during decode.
- * This is useful when ensuring that bytes have been properly decoded where there is
- * uncertainty about whether the bytes represent a Transaction or not. Switch to `true`
- * to be sure.
- * @name BitcoinTransaction.decode
- * @returns {BitcoinTransaction}
- * @function
- */
-BitcoinTransaction.decode = null
-
 // -------------------------------------------------------------------------------------------------------
 // Custom decoder and encoder descriptors and functions below here, used by ../coding.js
 // https://github.com/bitcoin/bitcoin/blob/41fa2926d86a57c9623d34debef20746ee2f454a/src/primitives/transaction.h#L181-L197
@@ -385,10 +398,20 @@ _customEncodeWitness
 const uint32_t lockTime
 `)
 
-BitcoinTransaction._customDecoderMarkStart = function (decoder, properties, state) {
+/**
+ * @param {Decoder} decoder
+ * @param {any[]} _properties
+ * @param {Record<string, any>} state
+ */
+BitcoinTransaction._customDecoderMarkStart = function (decoder, _properties, state) {
   state.transactionStartPos = decoder.currentPosition()
 }
 
+/**
+ * @param {Decoder} decoder
+ * @param {any[]} properties
+ * @param {Record<string, any>} state
+ */
 BitcoinTransaction._customDecodeSegWit = function (decoder, properties, state) {
   const flag = decoder.peek(2)
   state.segWitFlagStart = decoder.currentPosition()
@@ -400,12 +423,22 @@ BitcoinTransaction._customDecodeSegWit = function (decoder, properties, state) {
   }
 }
 
-BitcoinTransaction._customEncodeSegWit = function * (transaction, encoder, args) {
+/**
+ * @param {BitcoinTransaction} transaction
+ * @param {Encoder} _encoder
+ * @param {any[]} args
+ */
+BitcoinTransaction._customEncodeSegWit = function * (transaction, _encoder, args) {
   if ((!args || args[0] !== HASH_NO_WITNESS) && transaction.segWit) {
     yield Uint8Array.from([0x00, 0x01])
   }
 }
 
+/**
+ * @param {Decoder} decoder
+ * @param {any[]} properties
+ * @param {Record<string, any>} state
+ */
 BitcoinTransaction._customDecodeWitness = function (decoder, properties, state) {
   if (state.segWit) {
     state.witnessStart = decoder.currentPosition()
@@ -419,6 +452,11 @@ BitcoinTransaction._customDecodeWitness = function (decoder, properties, state) 
   }
 }
 
+/**
+ * @param {BitcoinTransaction} transaction
+ * @param {Encoder} encoder
+ * @param {any[]} args
+ */
 BitcoinTransaction._customEncodeWitness = function * (transaction, encoder, args) {
   if (args[0] !== HASH_NO_WITNESS && transaction.segWit) {
     for (const vin of transaction.vin) {
@@ -427,6 +465,11 @@ BitcoinTransaction._customEncodeWitness = function * (transaction, encoder, args
   }
 }
 
+/**
+ * @param {Decoder} decoder
+ * @param {any[]} properties
+ * @param {Record<string, any>} state
+ */
 BitcoinTransaction._customDecodeBytes = function (decoder, properties, state) {
   const start = state.transactionStartPos
   const end = decoder.currentPosition()
@@ -434,7 +477,12 @@ BitcoinTransaction._customDecodeBytes = function (decoder, properties, state) {
   properties.push(rawBytes)
 }
 
-BitcoinTransaction._customDecodeHash = function (decoder, properties, state) {
+/**
+ * @param {Decoder} _decoder
+ * @param {any[]} properties
+ * @param {Record<string, any>} _state
+ */
+BitcoinTransaction._customDecodeHash = function (_decoder, properties, _state) {
   const hashBytes = properties[properties.length - 1] // rawBytes
   const digest = dblSha2256(hashBytes)
   properties.push(digest)
@@ -445,6 +493,11 @@ BitcoinTransaction._customDecodeHash = function (decoder, properties, state) {
 // array and then remove the witness data array after the txout array, then hash the bytes
 // we're left with.
 // used as the txid if different from the hash
+/**
+ * @param {Decoder} decoder
+ * @param {any[]} properties
+ * @param {Record<string, any>} state
+ */
 BitcoinTransaction._customDecodeHashNoWitness = function (decoder, properties, state) {
   if (!state.segWit) {
     properties.push(null) // txid
@@ -471,6 +524,11 @@ BitcoinTransaction._customDecodeHashNoWitness = function (decoder, properties, s
   properties.push(hashBytes.length)
 }
 
+/**
+ * @param {Decoder} decoder
+ * @param {any[]} properties
+ * @param {Record<string, any>} state
+ */
 BitcoinTransaction._customDecodeSize = function (decoder, properties, state) {
   const start = state.transactionStartPos
   const end = decoder.currentPosition()
