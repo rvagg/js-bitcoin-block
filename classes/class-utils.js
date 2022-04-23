@@ -74,12 +74,16 @@ function fromHashHex (hashStr) {
   return buf
 }
 
+/**
+ * @param {string} propertiesDescriptor
+ * @returns {{type:string, name:string}[]}
+ */
 function decodeProperties (propertiesDescriptor) {
   return propertiesDescriptor
     .split('\n')
-    .map((l) => l.replace(/\s*(\/\/.*)$/, '')) // trailing whitespace and comments
+    .map((/** @type {string} */ l) => l.replace(/\s*(\/\/.*)$/, '')) // trailing whitespace and comments
     .filter(Boolean)
-    .map((p) => {
+    .map((/** @type {string} */ p) => {
       const ls = p.lastIndexOf(' ')
       const type = ls > -1 ? p.substring(0, ls).replace(/^const /, '') : p
       const name = ls > -1 ? p.substring(ls + 1).replace(/;$/, '') : p
@@ -99,10 +103,18 @@ function dblSha2256 (bytes) {
   return sha256(sha256(bytes))
 }
 
+/**
+ * @param {Uint8Array} bytes
+ * @returns {Uint8Array}
+ */
 function ripemd160 (bytes) {
-  return new RIPEMD160().update(bytes).digest()
+  return /** @type {Uint8Array} */ (new RIPEMD160().update(bytes).digest())
 }
 
+/**
+ * @param {Uint8Array} bytes
+ * @returns {Uint8Array}
+ */
 function hash160 (bytes) { // bitcoin ripemd-160(sha2-256(bytes))
   return ripemd160(sha256(bytes))
 }
@@ -116,9 +128,13 @@ function hash160 (bytes) { // bitcoin ripemd-160(sha2-256(bytes))
  * @function
  */
 function merkleRoot (hashes) {
+  /** @type {{hash:Uint8Array, data?:any}|undefined} */
   let last
   for (last of merkle(hashes)) {
     // empty
+  }
+  if (last == null) {
+    throw new Error('No hashes to create a Merkle root of')
   }
   return last.hash
 }
@@ -138,7 +154,7 @@ function merkleRoot (hashes) {
  * The final yielded result is the merkle root.
  *
  * @param {Array<Uint8Array>} hashes
- * @yields {object} `{ hash, data }` where `data` is an array of two hashes
+ * @yields {{hash:Uint8Array, data?:[Uint8Array, Uint8Array]}} `{ hash, data }` where `data` is an array of two hashes
  * @generator
  * @function
  */
@@ -167,6 +183,11 @@ function * merkle (hashes) {
   }
 }
 
+/**
+ * @param {string} str
+ * @param {number} [len]
+ * @returns {boolean}
+ */
 function isHexString (str, len) {
   return (len === undefined || str.length === len) && /^[0-9a-f]*$/.test(str)
 }

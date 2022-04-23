@@ -3,6 +3,9 @@ const { scriptToAsmStr } = require('./script')
 const BitcoinOutPoint = require('./OutPoint')
 const { toHex, fromHex } = require('../util')
 
+/** @typedef {import('../interface').TransactionInPorcelain} TransactionInPorcelain */
+/** @typedef {import('../interface').TransactionInCoinbasePorcelain} TransactionInCoinbasePorcelain */
+
 /**
  * A class representation of a Bitcoin TransactionIn, multiple of which are contained within each
  * {@link BitcoinTransaction} in its `vin` array.
@@ -28,9 +31,17 @@ class BitcoinTransactionIn {
     this.prevout = prevout
     this.scriptSig = scriptSig
     this.sequence = sequence
+    /** @type {undefined|Uint8Array[]} */
+    this.scriptWitness = undefined
   }
 
+  /**
+   * @param {*} [_]
+   * @param {boolean} [coinbase]
+   * @returns {TransactionInPorcelain|TransactionInCoinbasePorcelain}
+   */
   toJSON (_, coinbase) {
+    /** @type {any} */
     let obj
     if (coinbase) {
       obj = {
@@ -99,7 +110,7 @@ class BitcoinTransactionIn {
  *   - `scriptSig.hex` hex string - the raw scriptSig data (the asm isn't used)
  *
  * @function
- * @param porcelain the porcelain form of a BitcoinTransactionIn
+ * @param {TransactionInCoinbasePorcelain | TransactionInPorcelain} porcelain the porcelain form of a BitcoinTransactionIn
  * @returns {BitcoinTransactionIn}
  */
 BitcoinTransactionIn.fromPorcelain = function fromPorcelain (porcelain) {
@@ -111,7 +122,7 @@ BitcoinTransactionIn.fromPorcelain = function fromPorcelain (porcelain) {
     throw new TypeError('sequence property must be a number')
   }
   let vin
-  if (porcelain.coinbase) {
+  if ('coinbase' in porcelain) {
     if (typeof porcelain.coinbase !== 'string' || !isHexString(porcelain.coinbase)) {
       throw new Error('coinbase property should be a hex string')
     }
@@ -143,7 +154,7 @@ BitcoinTransactionIn.fromPorcelain = function fromPorcelain (porcelain) {
     scriptWitness = []
     for (const wit of porcelain.txinwitness) {
       if (!isHexString(wit)) {
-        throw new TypeError('txinwitness elements must be hex strings: ', wit)
+        throw new TypeError('txinwitness elements must be hex strings: ' + wit)
       }
       scriptWitness.push(fromHex(wit))
     }

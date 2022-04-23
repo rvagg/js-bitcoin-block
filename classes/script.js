@@ -149,7 +149,7 @@ const opcodeNames = ((() => {
     const [key, value] = c
     p[value] = key
     return p
-  }, [])
+  }, /** @type {string[]} */ ([]))
 
   opcodeNames[opcodes.OP_0] = '0'
   opcodeNames[opcodes.OP_1NEGATE] = '-1'
@@ -175,6 +175,11 @@ const mapSigHashTypes = {
   [sigHashTypes.SIGHASH_SINGLE | sigHashTypes.SIGHASH_ANYONECANPAY]: 'SINGLE|ANYONECANPAY'
 }
 
+/**
+ * @param {Uint8Array} buf
+ * @param {number} [offset=0]
+ * @returns {{opcode:number,opcodeName:string,data:Uint8Array,offset:number}|null}
+ */
 function getScriptOp (buf, offset = 0) {
   if (buf.length - offset < 1) {
     return null
@@ -221,6 +226,10 @@ function getScriptOp (buf, offset = 0) {
   }
 }
 
+/**
+ * @param {Uint8Array} buf
+ * @returns {boolean}
+ */
 function isDefinedHashtypeSignature (buf) {
   if (buf.length === 0) {
     return false
@@ -232,6 +241,10 @@ function isDefinedHashtypeSignature (buf) {
   return true
 }
 
+/**
+ * @param {Uint8Array} sig
+ * @returns {boolean}
+ */
 function isValidSignatureEncoding (sig) {
   // Format: 0x30 [total-length] 0x02 [R-length] [R] 0x02 [S-length] [S] [sighash]
   // * total-length: 1-byte length descriptor of everything that follows,
@@ -325,6 +338,11 @@ function isValidSignatureEncoding (sig) {
   return true
 }
 
+/**
+ * @param {Uint8Array} buf
+ * @param {boolean} [attemptSighashDecode]
+ * @returns {string}
+ */
 function scriptToAsmStr (buf, attemptSighashDecode) {
   let offset = 0
   let str = ''
@@ -364,11 +382,19 @@ function scriptToAsmStr (buf, attemptSighashDecode) {
   return str
 }
 
+/**
+ * @param {Uint8Array} buf
+ * @returns {boolean}
+ */
 function isUnspendable (buf) {
   return (buf.length > 0 && buf[0] === opcodes.OP_RETURN) || (buf.length > MAX_SCRIPT_SIZE)
 }
 
 // why is this a thing? I don't know.
+/**
+ * @param {Uint8Array} buf
+ * @returns {number}
+ */
 function setVch (buf) {
   if (!buf.length) {
     return 0
@@ -393,6 +419,10 @@ function setVch (buf) {
   return result
 }
 
+/**
+ * @param {Uint8Array} buf
+ * @returns {boolean}
+ */
 function isPayToScriptHash (buf) {
   return buf.length === 23 && buf[0] === opcodes.OP_HASH160 && buf[1] === 0x14 && buf[22] === opcodes.OP_EQUAL
 }
@@ -412,6 +442,10 @@ const types = {
 const WITNESS_V0_SCRIPTHASH_SIZE = 32
 const WITNESS_V0_KEYHASH_SIZE = 20
 
+/**
+ * @param {number} opcode
+ * @returns {number}
+ */
 function decodeOPN (opcode) {
   if (opcode === opcodes.OP_0) {
     return 0
@@ -419,6 +453,10 @@ function decodeOPN (opcode) {
   return opcode - (opcodes.OP_1 - 1)
 }
 
+/**
+ * @param {Uint8Array} buf
+ * @returns {{version:number, program:Uint8Array}|null}
+ */
 function isWitnessProgram (buf) {
   if (buf.length < 4 || buf.length > 42) {
     return null
@@ -435,6 +473,11 @@ function isWitnessProgram (buf) {
   return null
 }
 
+/**
+ * @param {Uint8Array} buf
+ * @param {number} offset
+ * @returns {boolean}
+ */
 function isPushOnly (buf, offset) {
   while (offset < buf.length) {
     const opcode = getScriptOp(buf, offset)
@@ -452,6 +495,10 @@ function isPushOnly (buf, offset) {
 const PUBKEY__SIZE = 65
 const PUBKEY__COMPRESSED_SIZE = 33
 
+/**
+ * @param {number} chHeader
+ * @returns {number}
+ */
 function pubKeyGetLen (chHeader) {
   if (chHeader === 2 || chHeader === 3) {
     return PUBKEY__COMPRESSED_SIZE
@@ -462,10 +509,18 @@ function pubKeyGetLen (chHeader) {
   return 0
 }
 
+/**
+ * @param {Uint8Array} buf
+ * @returns {boolean}
+ */
 function pubKeyValidSize (buf) {
   return buf.length > 0 && pubKeyGetLen(buf[0]) === buf.length
 }
 
+/**
+ * @param {Uint8Array} buf
+ * @returns {Uint8Array|null}
+ */
 function matchPayToPubkey (buf) {
   if (buf.length === PUBKEY__SIZE + 2 && buf[0] === PUBKEY__SIZE && buf[buf.length - 1] === opcodes.OP_CHECKSIG) {
     const pubkey = buf.slice(1, PUBKEY__SIZE + 1)
@@ -478,6 +533,10 @@ function matchPayToPubkey (buf) {
   return null
 }
 
+/**
+ * @param {Uint8Array} buf
+ * @returns {Uint8Array|null}
+ */
 function matchPayToPubkeyHash (buf) {
   if (buf.length === 25 &&
       buf[0] === opcodes.OP_DUP &&
@@ -490,10 +549,18 @@ function matchPayToPubkeyHash (buf) {
   return null
 }
 
+/**
+ * @param {number} opcode
+ * @returns {boolean}
+ */
 function isSmallInteger (opcode) {
   return opcode >= opcodes.OP_1 && opcode <= opcodes.OP_16
 }
 
+/**
+ * @param {Uint8Array} buf
+ * @returns {{required:number, pubkeys:Uint8Array[]}|null}
+ */
 function matchMultisig (buf) {
   if (buf.length < 1 || buf[buf.length - 1] !== opcodes.OP_CHECKMULTISIG) {
     return null
@@ -535,6 +602,10 @@ function matchMultisig (buf) {
   }
 }
 
+/**
+ * @param {Uint8Array} buf
+ * @returns {{solutions?:Uint8Array[], type:string}}
+ */
 function solver (buf) {
   if (isPayToScriptHash(buf)) {
     return {
@@ -609,23 +680,31 @@ function solver (buf) {
   }
 }
 
+/**
+ * @param {Uint8Array} buf
+ * @returns {Uint8Array|null}
+ */
 function extractDestination (buf) {
   const solution = solver(buf) // awkward double solve if this call comes from extractDestinations()
   if (solution.type === types.TX_PUBKEY) {
+    if (!solution.solutions) {
+      throw new Error('Expected solutions for TX type')
+    }
     if (!pubKeyValidSize(solution.solutions[0])) {
       return null
     }
     return solution.solutions[0]
-  } else if (solution.type === types.TX_PUBKEYHASH) {
-    return solution.solutions[0]
-  } else if (solution.type === types.TX_SCRIPTHASH) {
-    return solution.solutions[0]
-  } else if (solution.type === types.TX_WITNESS_V0_KEYHASH) {
-    return solution.solutions[0]
-  } else if (solution.type === types.TX_WITNESS_V0_SCRIPTHASH) {
+  } else if (solution.type === types.TX_PUBKEYHASH || solution.type === types.TX_SCRIPTHASH || solution.type === types.TX_WITNESS_V0_KEYHASH || solution.type === types.TX_WITNESS_V0_SCRIPTHASH) {
+    if (!solution.solutions) {
+      throw new Error('Expected solutions for TX type')
+    }
     return solution.solutions[0]
   } else if (solution.type === types.TX_WITNESS_UNKNOWN) {
+    if (!solution.solutions) {
+      throw new Error('Expected solutions for TX type')
+    }
     const unk = solution.solutions[1]
+    // @ts-ignore TODO: deal with witnessUnknownVersion
     unk.witnessUnknownVersion = solution.solutions[0][0]
     return unk
   }
@@ -633,7 +712,12 @@ function extractDestination (buf) {
   return null
 }
 
+/**
+ * @param {Uint8Array} buf
+ * @returns {{addresses:Uint8Array[], required:number}|null}
+ */
 function extractDestinations (buf) {
+  /** @type {number} */
   let required
   const addresses = []
   const solution = solver(buf) // TODO: make this an optional param
@@ -645,6 +729,9 @@ function extractDestinations (buf) {
   }
 
   if (solution.type === types.TX_MULTISIG) {
+    if (!solution.solutions) {
+      throw new Error('Expected solutions for TX_MULTISIG')
+    }
     required = solution.solutions[0][0]
     for (let i = 1; i < solution.solutions.length - 1; i++) {
       if (!pubKeyValidSize(solution.solutions[i])) {
@@ -670,7 +757,12 @@ function extractDestinations (buf) {
   }
 }
 
-// DestinationEncoder
+/**
+ * DestinationEncoder
+ * @param {Uint8Array} buf
+ * @param {string} type
+ * @returns
+ */
 function encodeAddress (buf, type) {
   if (type === types.TX_PUBKEY || type === types.TX_PUBKEYHASH || type === types.TX_SCRIPTHASH || type === types.TX_MULTISIG) {
     if (type === types.TX_PUBKEY || type === types.TX_PUBKEYHASH || type === types.TX_MULTISIG) {
@@ -690,11 +782,13 @@ function encodeAddress (buf, type) {
     return bech32.encode(BECH32_HRP, [0, ...words]) // 0 appended to the beginning as per DestinationEncoder()
   }
   if (type === types.TX_WITNESS_UNKNOWN) {
+    // @ts-ignore TODO: deal with witnessUnknownVersion
     const version = buf.witnessUnknownVersion
     if (version < 1 || version > 16 || buf.length < 2 || buf.length > 40) {
       return ''
     }
     const words = bech32.toWords(buf)
+    // @ts-ignore TODO: deal with witnessUnknownVersion
     return bech32.encode(BECH32_HRP, [buf.witnessUnknownVersion, ...words])
   }
   return `Unknown encoding [${type}]`

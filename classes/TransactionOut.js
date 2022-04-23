@@ -3,6 +3,8 @@ const { COIN } = require('./class-utils')
 const { types, scriptToAsmStr, solver, extractDestinations, encodeAddress } = require('./script')
 const { toHex, fromHex } = require('../util')
 
+/** @typedef {import('../interface').TransactionOutPorcelain} TransactionOutPorcelain */
+
 /**
  * A class representation of a Bitcoin TransactionOut, multiple of which are contained within each
  * {@link BitcoinTransaction} in its `vout` array.
@@ -26,7 +28,12 @@ class BitcoinTransactionOut {
     this.scriptPubKey = scriptPubKey
   }
 
+  /**
+   * @param {number} [n]
+   * @returns {TransactionOutPorcelain}
+   */
   toJSON (n) {
+    /** @type {any} */
     const obj = { value: this.value / COIN }
     if (typeof n === 'number') {
       obj.n = n
@@ -85,7 +92,7 @@ class BitcoinTransactionOut {
  *   - `scriptPubKey.hex` hex string - the raw scriptPubKey data (the asm isn't used)
  *
  * @function
- * @param porcelain the porcelain form of a BitcoinTransactionOut
+ * @param {TransactionOutPorcelain} porcelain the porcelain form of a BitcoinTransactionOut
  * @returns {BitcoinTransactionOut}
  */
 BitcoinTransactionOut.fromPorcelain = function fromPorcelain (porcelain) {
