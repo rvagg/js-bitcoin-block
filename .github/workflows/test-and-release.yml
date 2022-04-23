@@ -20,7 +20,7 @@ jobs:
           npm install --no-progress
       - name: Run tests
         run: |
-          npm test
+          npm run test:ci
   release:
     name: Release
     needs: test
