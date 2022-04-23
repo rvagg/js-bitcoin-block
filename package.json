@@ -26,7 +26,7 @@
     "test:browser": "polendina --timeout 320 --runner=mocha --cleanup test/browser.js",
     "test:node": "mocha test/node.js",
     "test": "npm run lint && npm run build:types && npm run test:node",
-    "test:ci": "npm run test && npm test:browser",
+    "test:ci": "npm run test && npm run test:browser",
     "docs": "jsdoc4readme --readme bitcoin-block.js classes/class-utils.js classes/Block.js classes/Transaction.js classes/TransactionIn.js classes/TransactionOut.js"
   },
   "bin": {
