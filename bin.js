@@ -2,7 +2,7 @@
 
 const { Transform } = require('stream')
 const { createReadStream } = require('fs')
-const { BitcoinBlock } = require('./')
+const { BitcoinBlock } = require('./bitcoin-block.js')
 
 /** @typedef {import('fs').ReadStream} ReadStream */
 

@@ -16,8 +16,8 @@
     "strict": true,
     "alwaysStrict": true,
     "esModuleInterop": true,
-    "target": "es2018",
-    "module": "es2020",
+    "target": "es2020",
+    "module": "esnext",
     "moduleResolution": "node",
     "declaration": true,
     "declarationMap": true,
@@ -27,11 +27,16 @@
     "resolveJsonModule": true,
     "baseUrl": ".",
     "emitDeclarationOnly": true,
-    "paths": {}
   },
+  "include": [
+    "./*.js",
+    "./interface.ts",
+    "./classes/**/*",
+    "./test/**/*"
+  ],
   "exclude": [
-    "node_modules",
-    "types",
+    "./types/**/*",
+    "./node_modules/**/*",
     "example.js"
   ],
   "compileOnSave": false
