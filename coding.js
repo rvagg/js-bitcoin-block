@@ -552,7 +552,7 @@ function decodeType (buf, type, strictLengthUsage) {
 
   const block = decoder.readType(type)
   if (strictLengthUsage && pos !== buf.length) {
-    throw new Error('decode did not consume all available bytes as expected')
+    throw new Error(`decode did not consume all available bytes as expected (${pos} != ${buf.length})`)
   }
   return block
 }
