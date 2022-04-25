@@ -47,6 +47,7 @@ export interface TransactionPorcelain {
     hex: string;
 }
 export interface TransactionInCoinbasePorcelain {
+    txid: string;
     coinbase: string;
     txinwitness?: string[];
     sequence: number;

@@ -145,7 +145,7 @@ class BitcoinBlock {
    *
    * @method
    * @param {'min'|'header'|'full'} [type]
-   * @returns {object}
+   * @returns {BlockPorcelain|BlockHeaderPorcelain}
    */
   toPorcelain (type) {
     return this.toJSON(null, type)
@@ -353,7 +353,7 @@ BitcoinBlock.fromPorcelain = function fromPorcelain (porcelain) {
     throw new TypeError('bits property must be a hex string')
   }
   let tx
-  if ('tx' in porcelain) {
+  if ('tx' in porcelain && porcelain.tx !== null) {
     if (!Array.isArray(porcelain.tx)) {
       throw new TypeError('tx property must be an array')
     }
