@@ -80,9 +80,9 @@ declare class BitcoinBlock {
      *
      * @method
      * @param {'min'|'header'|'full'} [type]
-     * @returns {object}
+     * @returns {BlockPorcelain|BlockHeaderPorcelain}
      */
-    toPorcelain(type?: "min" | "header" | "full" | undefined): object;
+    toPorcelain(type?: "min" | "header" | "full" | undefined): BlockPorcelain | BlockHeaderPorcelain;
     /**
      * **Calculate** the merkle root of the transactions in this block. This method should reproduce
      * the native `merkleroot` field if this block was decoded from raw block data.

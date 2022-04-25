@@ -53,6 +53,7 @@ export interface TransactionPorcelain {
 }
 
 export interface TransactionInCoinbasePorcelain {
+  txid: string
   coinbase: string
   txinwitness?: string[]
   sequence: number
