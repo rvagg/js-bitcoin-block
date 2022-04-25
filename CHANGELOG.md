@@ -1,3 +1,10 @@
+### [2.0.1](https://github.com/rvagg/js-bitcoin-block/compare/v2.0.0...v2.0.1) (2022-04-25)
+
+
+### Bug Fixes
+
+* minor types fixes ([8b06cc8](https://github.com/rvagg/js-bitcoin-block/commit/8b06cc8b05c8b7bc8f0d6464e728a4bec53bc3c4))
+
 ## [2.0.0](https://github.com/rvagg/js-bitcoin-block/compare/v1.3.0...v2.0.0) (2022-04-23)
 
 
