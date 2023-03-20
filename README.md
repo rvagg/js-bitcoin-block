@@ -94,8 +94,6 @@ For blocks, the following properties are not derivable from isolated block data:
 
 Additionally, the `difficulty` property may different slightly in precision of output but will be the same to two decimal places.
 
-For transactions, the coinbase (first transaction) reported from the Bitcoin RPC does not report the `txinwitness` property which is the witness commitment nonce. It is included in this API for completeness and may be present in future iterations of the Bitcoin RPC pending [bitcoin/bitcoin#18826](https://github.com/bitcoin/bitcoin/pull/18826/).
-
 ### Schema
 
 Using [IPlD Schemas](https://specs.ipld.io/schemas/) we can approximately describe the structure of Bitcoin blocks and transactions in both their native and porcelain forms.
