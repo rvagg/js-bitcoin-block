@@ -11,7 +11,7 @@
     "multiformats": "^11.0.2"
   },
   "devDependencies": {
-    "@types/chai": "^4.3.1",
+    "@types/chai": "^5.2.3",
     "@types/mocha": "^10.0.0",
     "chai": "^4.3.6",
     "jsdoc4readme": "^1.4.0",
