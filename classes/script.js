@@ -1,7 +1,7 @@
-const { base58btc } = require('multiformats/bases/base58')
-const { bech32 } = require('bech32')
-const { dblSha2256, hash160 } = require('./class-utils')
-const { toHex, concat } = require('../util')
+import { base58btc } from 'multiformats/bases/base58'
+import { bech32 } from 'bech32'
+import { dblSha2256, hash160 } from './class-utils.js'
+import { toHex, concat } from '../util.js'
 
 const MAX_SCRIPT_SIZE = 10000
 const BECH32_HRP = 'bc'
@@ -663,6 +663,7 @@ function solver (buf) {
 
   const multisig = matchMultisig(buf)
   if (multisig) {
+    /** @type {Uint8Array[]} */
     const solutions = [Uint8Array.from([multisig.required])]
     for (const sol of multisig.pubkeys) {
       solutions.push(sol)
@@ -794,29 +795,4 @@ function encodeAddress (buf, type) {
   return `Unknown encoding [${type}]`
 }
 
-module.exports.MAX_SCRIPT_SIZE = MAX_SCRIPT_SIZE
-module.exports.opcodes = opcodes
-module.exports.opcodeNames = opcodeNames
-module.exports.sigHashTypes = sigHashTypes
-module.exports.mapSigHashTypes = mapSigHashTypes
-module.exports.types = types
-module.exports.WITNESS_V0_KEYHASH_SIZE = WITNESS_V0_KEYHASH_SIZE
-module.exports.WITNESS_V0_SCRIPTHASH_SIZE = WITNESS_V0_SCRIPTHASH_SIZE
-module.exports.getScriptOp = getScriptOp
-module.exports.isDefinedHashtypeSignature = isDefinedHashtypeSignature
-module.exports.isValidSignatureEncoding = isValidSignatureEncoding
-module.exports.scriptToAsmStr = scriptToAsmStr
-module.exports.isUnspendable = isUnspendable
-module.exports.setVch = setVch
-module.exports.isPayToScriptHash = isPayToScriptHash
-module.exports.isWitnessProgram = isWitnessProgram
-module.exports.isPushOnly = isPushOnly
-module.exports.pubKeyGetLen = pubKeyGetLen
-module.exports.pubKeyValidSize = pubKeyValidSize
-module.exports.matchPayToPubkey = matchPayToPubkey
-module.exports.matchPayToPubkeyHash = matchPayToPubkeyHash
-module.exports.matchMultisig = matchMultisig
-module.exports.isSmallInteger = isSmallInteger
-module.exports.solver = solver
-module.exports.extractDestinations = extractDestinations
-module.exports.encodeAddress = encodeAddress
+export { MAX_SCRIPT_SIZE, opcodes, opcodeNames, sigHashTypes, mapSigHashTypes, types, WITNESS_V0_KEYHASH_SIZE, WITNESS_V0_SCRIPTHASH_SIZE, getScriptOp, isDefinedHashtypeSignature, isValidSignatureEncoding, scriptToAsmStr, isUnspendable, setVch, isPayToScriptHash, isWitnessProgram, isPushOnly, pubKeyGetLen, pubKeyValidSize, matchPayToPubkey, matchPayToPubkeyHash, matchMultisig, isSmallInteger, solver, extractDestinations, encodeAddress }

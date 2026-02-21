@@ -1,9 +1,8 @@
-const { decodeProperties, isHexString } = require('./class-utils')
-const { COIN } = require('./class-utils')
-const { types, scriptToAsmStr, solver, extractDestinations, encodeAddress } = require('./script')
-const { toHex, fromHex } = require('../util')
+import { decodeProperties, isHexString, COIN } from './class-utils.js'
+import { types, scriptToAsmStr, solver, extractDestinations, encodeAddress } from './script.js'
+import { toHex, fromHex } from '../util.js'
 
-/** @typedef {import('../interface').TransactionOutPorcelain} TransactionOutPorcelain */
+/** @typedef {import('../interface.js').TransactionOutPorcelain} TransactionOutPorcelain */
 
 /**
  * A class representation of a Bitcoin TransactionOut, multiple of which are contained within each
@@ -126,4 +125,4 @@ CAmount value;
 CScript scriptPubKey;
 `)
 
-module.exports = BitcoinTransactionOut
+export default BitcoinTransactionOut

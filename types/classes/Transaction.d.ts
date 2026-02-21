@@ -1,7 +1,11 @@
-export = BitcoinTransaction;
-/** @typedef {import('../interface').Decoder} Decoder */
-/** @typedef {import('../interface').Encoder} Encoder */
-/** @typedef {import('../interface').TransactionPorcelain} TransactionPorcelain */
+export default BitcoinTransaction;
+export { COIN };
+export type Decoder = import("../interface.js").Decoder;
+export type Encoder = import("../interface.js").Encoder;
+export type TransactionPorcelain = import("../interface.js").TransactionPorcelain;
+/** @typedef {import('../interface.js').Decoder} Decoder */
+/** @typedef {import('../interface.js').Encoder} Encoder */
+/** @typedef {import('../interface.js').TransactionPorcelain} TransactionPorcelain */
 /**
  * A class representation of a Bitcoin Transaction, multiple of which are contained within each
  * {@link BitcoinBlock}.
@@ -42,15 +46,15 @@ declare class BitcoinTransaction {
      * @param {number} [size]
      * @constructs BitcoinTransaction
      */
-    constructor(version: number, segWit: boolean, vin: Array<BitcoinTransactionIn>, vout: Array<BitcoinTransactionOut>, lockTime: number, rawBytes?: Uint8Array | undefined, hash?: Uint8Array | undefined, txid?: Uint8Array | undefined, sizeNoWitness?: number | undefined, size?: number | undefined);
+    constructor(version: number, segWit: boolean, vin: Array<BitcoinTransactionIn>, vout: Array<BitcoinTransactionOut>, lockTime: number, rawBytes?: Uint8Array, hash?: Uint8Array, txid?: Uint8Array, sizeNoWitness?: number, size?: number);
     version: number;
     segWit: boolean;
     vin: BitcoinTransactionIn[];
     vout: BitcoinTransactionOut[];
     lockTime: number;
-    rawBytes: Uint8Array | undefined;
-    hash: Uint8Array | undefined;
-    txid: Uint8Array | undefined;
+    rawBytes: Uint8Array<ArrayBufferLike> | undefined;
+    hash: Uint8Array<ArrayBufferLike> | undefined;
+    txid: Uint8Array<ArrayBufferLike> | undefined;
     sizeNoWitness: number | undefined;
     size: number | undefined;
     _calculateWeightAndVsize(): void;
@@ -135,133 +139,130 @@ declare class BitcoinTransaction {
      * @method
      * @returns {Uint8Array}
      */
-    encode(_noWitness?: typeof HASH_NO_WITNESS | undefined): Uint8Array;
+    encode(_noWitness?: typeof HASH_NO_WITNESS): Uint8Array;
 }
 declare namespace BitcoinTransaction {
-    export { decode, isPorcelainSegWit, fromPorcelain, HASH_NO_WITNESS, _nativeName, _decodePropertiesDescriptor, _encodePropertiesDescriptor, _customDecoderMarkStart, _customDecodeSegWit, _customEncodeSegWit, _customDecodeWitness, _customEncodeWitness, _customDecodeBytes, _customDecodeHash, _customDecodeHashNoWitness, _customDecodeSize, COIN, Decoder, Encoder, TransactionPorcelain };
+    /**
+     * Decode a {@link BitcoinTransaction} from the raw bytes of the transaction.
+     * Normally raw transaction data isn't available in detached form, although the
+     * hex is available in the JSON output provided by the bitcoin cli attached to
+     * each element of the `tx` array. It may also come from the
+     * {@link BitcoinTransaction#encode} method.
+     *
+     * @param {Uint8Array} _bytes - the raw bytes of the transaction to be decoded.
+     * @param {boolean} _strictLengthUsage - ensure that all bytes were consumed during decode.
+     * This is useful when ensuring that bytes have been properly decoded where there is
+     * uncertainty about whether the bytes represent a Transaction or not. Switch to `true`
+     * to be sure.
+     * @name BitcoinTransaction.decode
+     * @returns {BitcoinTransaction}
+     * @function
+     */
+    export function decode(_bytes: Uint8Array, _strictLengthUsage: boolean): BitcoinTransaction;
+    /**
+     * Check if the porcelain form of a transaction is has witness data and is therefore
+     * post-SegWit.
+     *
+     * @function
+     * @param {TransactionPorcelain} porcelain form of a transaction
+     * @returns {boolean}
+     */
+    export function isPorcelainSegWit(porcelain: TransactionPorcelain): boolean;
+    /**
+     * Instantiate a `BitcoinTransaction` from porcelain data. This is the inverse of
+     * {@link BitcoinTransaction#toPorcelain}. It does _not_ require the entirety of the porcelain data
+     * as much of it is either duplicate data or derivable from other fields.
+     *
+     * This function is normally called from {@link BitcoinBlock.fromPorcelain} to instantiate the
+     * each element of the `tx` array.
+     *
+     * Fields required to instantiate a transaction are:
+     *
+     * * `version` number
+     * * `locktime` number
+     * * `vin` array of {@link BitcoinTransactionIn} porcelain forms
+     * * `vout` array of {@link BitcoinTransactionIn} porcelain forms
+     *
+     * Some indication of whether this is a SegWit transaction is also required to properly instantiate
+     * a correct BitcoinTransaction. This could be one of:
+     *
+     * * both the `hash` and `txid` fields (these are compared)
+     * * both the `size` and `weight` fields (`weight` is recalculated from size and compared)
+     * * the `height` property (this can only come from the Bitcoin Core RPC as it is chain-context data
+     *   and not derivable from standard block data)
+     *
+     * @function
+     * @param {TransactionPorcelain} porcelain the porcelain form of a BitcoinTransaction
+     * @returns {BitcoinTransaction}
+     */
+    export function fromPorcelain(porcelain: TransactionPorcelain): BitcoinTransaction;
+    export { HASH_NO_WITNESS };
+    export let _nativeName: string;
+    export let _decodePropertiesDescriptor: {
+        type: string;
+        name: string;
+    }[];
+    export let _encodePropertiesDescriptor: {
+        type: string;
+        name: string;
+    }[];
+    /**
+     * @param {Decoder} decoder
+     * @param {any[]} _properties
+     * @param {Record<string, any>} state
+     */
+    export function _customDecoderMarkStart(decoder: Decoder, _properties: any[], state: Record<string, any>): void;
+    /**
+     * @param {Decoder} decoder
+     * @param {any[]} properties
+     * @param {Record<string, any>} state
+     */
+    export function _customDecodeSegWit(decoder: Decoder, properties: any[], state: Record<string, any>): void;
+    /**
+     * @param {BitcoinTransaction} transaction
+     * @param {Encoder} _encoder
+     * @param {any[]} args
+     */
+    export function _customEncodeSegWit(transaction: BitcoinTransaction, _encoder: Encoder, args: any[]): Generator<Uint8Array<ArrayBuffer>, void, unknown>;
+    /**
+     * @param {Decoder} decoder
+     * @param {any[]} properties
+     * @param {Record<string, any>} state
+     */
+    export function _customDecodeWitness(decoder: Decoder, properties: any[], state: Record<string, any>): void;
+    /**
+     * @param {BitcoinTransaction} transaction
+     * @param {Encoder} encoder
+     * @param {any[]} args
+     */
+    export function _customEncodeWitness(transaction: BitcoinTransaction, encoder: Encoder, args: any[]): Generator<Uint8Array<ArrayBufferLike>, void, unknown>;
+    /**
+     * @param {Decoder} decoder
+     * @param {any[]} properties
+     * @param {Record<string, any>} state
+     */
+    export function _customDecodeBytes(decoder: Decoder, properties: any[], state: Record<string, any>): void;
+    /**
+     * @param {Decoder} _decoder
+     * @param {any[]} properties
+     * @param {Record<string, any>} _state
+     */
+    export function _customDecodeHash(_decoder: Decoder, properties: any[], _state: Record<string, any>): void;
+    /**
+     * @param {Decoder} decoder
+     * @param {any[]} properties
+     * @param {Record<string, any>} state
+     */
+    export function _customDecodeHashNoWitness(decoder: Decoder, properties: any[], state: Record<string, any>): void;
+    /**
+     * @param {Decoder} decoder
+     * @param {any[]} properties
+     * @param {Record<string, any>} state
+     */
+    export function _customDecodeSize(decoder: Decoder, properties: any[], state: Record<string, any>): void;
 }
-import BitcoinTransactionIn = require("./TransactionIn");
-import BitcoinTransactionOut = require("./TransactionOut");
-type TransactionPorcelain = import('../interface').TransactionPorcelain;
-import { HASH_NO_WITNESS } from "./class-utils";
-/**
- * Decode a {@link BitcoinTransaction} from the raw bytes of the transaction.
- * Normally raw transaction data isn't available in detached form, although the
- * hex is available in the JSON output provided by the bitcoin cli attached to
- * each element of the `tx` array. It may also come from the
- * {@link BitcoinTransaction#encode} method.
- *
- * @param {Uint8Array} _bytes - the raw bytes of the transaction to be decoded.
- * @param {boolean} _strictLengthUsage - ensure that all bytes were consumed during decode.
- * This is useful when ensuring that bytes have been properly decoded where there is
- * uncertainty about whether the bytes represent a Transaction or not. Switch to `true`
- * to be sure.
- * @name BitcoinTransaction.decode
- * @returns {BitcoinTransaction}
- * @function
- */
-declare function decode(_bytes: Uint8Array, _strictLengthUsage: boolean): BitcoinTransaction;
-/**
- * Check if the porcelain form of a transaction is has witness data and is therefore
- * post-SegWit.
- *
- * @function
- * @param {TransactionPorcelain} porcelain form of a transaction
- * @returns {boolean}
- */
-declare function isPorcelainSegWit(porcelain: TransactionPorcelain): boolean;
-/**
- * Instantiate a `BitcoinTransaction` from porcelain data. This is the inverse of
- * {@link BitcoinTransaction#toPorcelain}. It does _not_ require the entirety of the porcelain data
- * as much of it is either duplicate data or derivable from other fields.
- *
- * This function is normally called from {@link BitcoinBlock.fromPorcelain} to instantiate the
- * each element of the `tx` array.
- *
- * Fields required to instantiate a transaction are:
- *
- * * `version` number
- * * `locktime` number
- * * `vin` array of {@link BitcoinTransactionIn} porcelain forms
- * * `vout` array of {@link BitcoinTransactionIn} porcelain forms
- *
- * Some indication of whether this is a SegWit transaction is also required to properly instantiate
- * a correct BitcoinTransaction. This could be one of:
- *
- * * both the `hash` and `txid` fields (these are compared)
- * * both the `size` and `weight` fields (`weight` is recalculated from size and compared)
- * * the `height` property (this can only come from the Bitcoin Core RPC as it is chain-context data
- *   and not derivable from standard block data)
- *
- * @function
- * @param {TransactionPorcelain} porcelain the porcelain form of a BitcoinTransaction
- * @returns {BitcoinTransaction}
- */
-declare function fromPorcelain(porcelain: TransactionPorcelain): BitcoinTransaction;
-declare var _nativeName: string;
-declare var _decodePropertiesDescriptor: {
-    type: string;
-    name: string;
-}[];
-declare var _encodePropertiesDescriptor: {
-    type: string;
-    name: string;
-}[];
-/**
- * @param {Decoder} decoder
- * @param {any[]} _properties
- * @param {Record<string, any>} state
- */
-declare function _customDecoderMarkStart(decoder: Decoder, _properties: any[], state: Record<string, any>): void;
-/**
- * @param {Decoder} decoder
- * @param {any[]} properties
- * @param {Record<string, any>} state
- */
-declare function _customDecodeSegWit(decoder: Decoder, properties: any[], state: Record<string, any>): void;
-/**
- * @param {BitcoinTransaction} transaction
- * @param {Encoder} _encoder
- * @param {any[]} args
- */
-declare function _customEncodeSegWit(transaction: BitcoinTransaction, _encoder: Encoder, args: any[]): Generator<Uint8Array, void, unknown>;
-/**
- * @param {Decoder} decoder
- * @param {any[]} properties
- * @param {Record<string, any>} state
- */
-declare function _customDecodeWitness(decoder: Decoder, properties: any[], state: Record<string, any>): void;
-/**
- * @param {BitcoinTransaction} transaction
- * @param {Encoder} encoder
- * @param {any[]} args
- */
-declare function _customEncodeWitness(transaction: BitcoinTransaction, encoder: Encoder, args: any[]): Generator<Uint8Array, void, unknown>;
-/**
- * @param {Decoder} decoder
- * @param {any[]} properties
- * @param {Record<string, any>} state
- */
-declare function _customDecodeBytes(decoder: Decoder, properties: any[], state: Record<string, any>): void;
-/**
- * @param {Decoder} _decoder
- * @param {any[]} properties
- * @param {Record<string, any>} _state
- */
-declare function _customDecodeHash(_decoder: Decoder, properties: any[], _state: Record<string, any>): void;
-/**
- * @param {Decoder} decoder
- * @param {any[]} properties
- * @param {Record<string, any>} state
- */
-declare function _customDecodeHashNoWitness(decoder: Decoder, properties: any[], state: Record<string, any>): void;
-/**
- * @param {Decoder} decoder
- * @param {any[]} properties
- * @param {Record<string, any>} state
- */
-declare function _customDecodeSize(decoder: Decoder, properties: any[], state: Record<string, any>): void;
-import { COIN } from "./class-utils";
-type Decoder = import('../interface').Decoder;
-type Encoder = import('../interface').Encoder;
+import { COIN } from './class-utils.js';
+import BitcoinTransactionIn from './TransactionIn.js';
+import BitcoinTransactionOut from './TransactionOut.js';
+import { HASH_NO_WITNESS } from './class-utils.js';
 //# sourceMappingURL=Transaction.d.ts.map

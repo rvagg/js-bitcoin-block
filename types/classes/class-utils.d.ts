@@ -83,18 +83,18 @@ export function merkleRoot(hashes: Array<Uint8Array>): Uint8Array;
  * @function
  */
 export function merkle(hashes: Array<Uint8Array>): Generator<{
-    hash: Uint8Array;
+    hash: Uint8Array<ArrayBufferLike>;
     data?: undefined;
 } | {
-    hash: Uint8Array;
-    data: Uint8Array[];
+    hash: Uint8Array<ArrayBufferLike>;
+    data: Uint8Array<ArrayBufferLike>[];
 }, void, unknown>;
 /**
  * @param {string} str
  * @param {number} [len]
  * @returns {boolean}
  */
-export function isHexString(str: string, len?: number | undefined): boolean;
+export function isHexString(str: string, len?: number): boolean;
 /**
  * The `COIN` constant is the number of _satoshis_ in 1 BTC, i.e. 100,000,000.
  * Transaction store values in satoshis so must be divided by `COIN` to find the

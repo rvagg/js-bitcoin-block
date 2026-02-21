@@ -1,10 +1,13 @@
 /* eslint-env mocha */
 
-const fs = require('fs').promises
-const { readdirSync } = require('fs')
-const path = require('path')
-const test = require('./test.js')
-const { fromHex } = require('../util.js')
+import fs from 'node:fs/promises'
+import { readdirSync } from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import test from './test.js'
+import { fromHex } from '../util.js'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 // export an async function per block
 const hashes = readdirSync(path.join(__dirname, 'fixtures'))

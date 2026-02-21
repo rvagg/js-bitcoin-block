@@ -1,11 +1,15 @@
-const BitcoinBlock = require('./classes/Block')
-const BitcoinTransaction = require('./classes/Transaction')
-const BitcoinTransactionIn = require('./classes/TransactionIn')
-const BitcoinTransactionOut = require('./classes/TransactionOut')
-const BitcoinOutPoint = require('./classes/OutPoint')
-const coding = require('./coding')(require('./classes/'))
-const { toHashHex, fromHashHex, COIN, dblSha2256, merkle, merkleRoot } = require('./classes/class-utils')
-const { concat } = require('./util')
+import BitcoinBlock, { BitcoinBlockHeaderOnly } from './classes/Block.js'
+import BitcoinTransaction from './classes/Transaction.js'
+import BitcoinTransactionIn from './classes/TransactionIn.js'
+import BitcoinTransactionOut from './classes/TransactionOut.js'
+import BitcoinOutPoint from './classes/OutPoint.js'
+import { setup, decodeType, encodeType } from './coding.js'
+import * as allClasses from './classes/index.js'
+import { toHashHex, fromHashHex, COIN, dblSha2256, merkle, merkleRoot } from './classes/class-utils.js'
+import { concat } from './util.js'
+
+// Populate the class registry used by coding.js for encode/decode
+setup(allClasses)
 
 /**
  * @param {Uint8Array} buf
@@ -13,7 +17,7 @@ const { concat } = require('./util')
  * @returns {BitcoinBlock}
  */
 BitcoinBlock.decode = function decodeBlock (buf, strictLengthUsage) {
-  return coding.decodeType(buf, 'CBlockHeader', strictLengthUsage)
+  return decodeType(buf, 'CBlockHeader', strictLengthUsage)
 }
 
 /**
@@ -22,7 +26,7 @@ BitcoinBlock.decode = function decodeBlock (buf, strictLengthUsage) {
  * @returns {BitcoinBlock}
  */
 BitcoinBlock.decodeHeaderOnly = function decodeBlockHeaderOnly (buf, strictLengthUsage) {
-  return coding.decodeType(buf, 'CBlockHeader__Only', strictLengthUsage)
+  return decodeType(buf, 'CBlockHeader__Only', strictLengthUsage)
 }
 
 /**
@@ -30,15 +34,15 @@ BitcoinBlock.decodeHeaderOnly = function decodeBlockHeaderOnly (buf, strictLengt
  * @returns {Uint8Array}
  */
 BitcoinBlock.prototype.encode = function (...args) {
-  return concat([...coding.encodeType(this, args)])
+  return concat([...encodeType(this, args)])
 }
 
 /**
  * @param  {...any} args
  * @returns {Uint8Array}
  */
-BitcoinBlock.BitcoinBlockHeaderOnly.prototype.encode = function (...args) {
-  return concat([...coding.encodeType(this, args)])
+BitcoinBlockHeaderOnly.prototype.encode = function (...args) {
+  return concat([...encodeType(this, args)])
 }
 
 /**
@@ -47,7 +51,7 @@ BitcoinBlock.BitcoinBlockHeaderOnly.prototype.encode = function (...args) {
  * @returns {any}
  */
 BitcoinTransaction.decode = function decodeTransaction (buf, strictLengthUsage) {
-  return coding.decodeType(buf, 'CTransaction', strictLengthUsage)
+  return decodeType(buf, 'CTransaction', strictLengthUsage)
 }
 
 /**
@@ -55,18 +59,20 @@ BitcoinTransaction.decode = function decodeTransaction (buf, strictLengthUsage) 
  * @returns {Uint8Array}
  */
 BitcoinTransaction.prototype.encode = function (...args) {
-  return concat([...coding.encodeType(this, args)])
+  return concat([...encodeType(this, args)])
 }
 
-module.exports.BitcoinBlock = BitcoinBlock
-module.exports.BitcoinBlockHeaderOnly = BitcoinBlock.BitcoinBlockHeaderOnly
-module.exports.BitcoinTransaction = BitcoinTransaction
-module.exports.BitcoinTransactionIn = BitcoinTransactionIn
-module.exports.BitcoinTransactionOut = BitcoinTransactionOut
-module.exports.BitcoinOutPoint = BitcoinOutPoint
-module.exports.toHashHex = toHashHex
-module.exports.fromHashHex = fromHashHex
-module.exports.COIN = COIN
-module.exports.dblSha2256 = dblSha2256
-module.exports.merkle = merkle
-module.exports.merkleRoot = merkleRoot
+export {
+  BitcoinBlock,
+  BitcoinBlockHeaderOnly,
+  BitcoinTransaction,
+  BitcoinTransactionIn,
+  BitcoinTransactionOut,
+  BitcoinOutPoint,
+  toHashHex,
+  fromHashHex,
+  COIN,
+  dblSha2256,
+  merkle,
+  merkleRoot
+}

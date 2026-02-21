@@ -1,4 +1,4 @@
-const {
+import {
   decodeProperties,
   toHashHex,
   WITNESS_SCALE_FACTOR,
@@ -7,14 +7,14 @@ const {
   SEGWIT_HEIGHT,
   dblSha2256,
   isHexString
-} = require('./class-utils')
-const BitcoinTransactionIn = require('./TransactionIn')
-const BitcoinTransactionOut = require('./TransactionOut')
-const { toHex, concat } = require('../util')
+} from './class-utils.js'
+import BitcoinTransactionIn from './TransactionIn.js'
+import BitcoinTransactionOut from './TransactionOut.js'
+import { toHex, concat } from '../util.js'
 
-/** @typedef {import('../interface').Decoder} Decoder */
-/** @typedef {import('../interface').Encoder} Encoder */
-/** @typedef {import('../interface').TransactionPorcelain} TransactionPorcelain */
+/** @typedef {import('../interface.js').Decoder} Decoder */
+/** @typedef {import('../interface.js').Encoder} Encoder */
+/** @typedef {import('../interface.js').TransactionPorcelain} TransactionPorcelain */
 
 /**
  * A class representation of a Bitcoin Transaction, multiple of which are contained within each
@@ -533,13 +533,7 @@ BitcoinTransaction._customDecodeSize = function (decoder, properties, state) {
   const start = state.transactionStartPos
   const end = decoder.currentPosition()
   properties.push(end - start)
-  /* debugging data for generating test fixtures focused on transactions
-  const hash = properties[properties.length - 4]
-  let hashNoWitness = properties[properties.length - 3]
-  hashNoWitness = hashNoWitness ? `'${toHex(hashNoWitness)}'` : 'null'
-  require('fs').appendFileSync('tx.log', `  ['${toHex(hash)}', ${hashNoWitness}, ${start}, ${end}],\n`, 'utf8')
-  */
 }
 
-module.exports = BitcoinTransaction
-module.exports.COIN = COIN
+export default BitcoinTransaction
+export { COIN }

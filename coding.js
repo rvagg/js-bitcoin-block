@@ -1,10 +1,19 @@
-const { toHex } = require('./util')
+import { toHex } from './util.js'
 /** @type {Record<string, any>} */
 const classRegistry = {}
 
-/** @typedef {import('./interface').Encoder} Encoder */
-/** @typedef {import('./interface').ValueEncoder} ValueEncoder */
-/** @typedef {import('./interface').Decoder} Decoder */
+/** @typedef {import('./interface.js').Encoder} Encoder */
+/** @typedef {import('./interface.js').ValueEncoder} ValueEncoder */
+/** @typedef {import('./interface.js').Decoder} Decoder */
+
+let DEBUG = false
+
+/**
+ * @param {boolean} value
+ */
+export function setDebug (value) {
+  DEBUG = value
+}
 
 // https://github.com/zcash/zcash/blob/fa1b656482a38d3a6c97950b35521a9c45da1e9c/src/serialize.h#L264
 /**
@@ -37,7 +46,7 @@ function writeCompactSize (size) {
  * @param {number} size
  * @returns {number}
  */
-function compactSizeSize (size) {
+export function compactSizeSize (size) {
   if (size < 253) {
     return 1
   } else if (size <= 0xffff) {
@@ -52,6 +61,7 @@ function compactSizeSize (size) {
 
 /** @type {Record<string, ValueEncoder>} */
 const encoders = {
+  /** @param {any} v */
   int32_t: function * writeInt32LE (v) {
     if (typeof v !== 'number') {
       throw new Error('Encoding int32 requires a "number" type')
@@ -60,12 +70,13 @@ const encoders = {
     const b = new Uint8Array(4)
     const dv = new DataView(b.buffer, b.byteOffset, b.length)
     dv.setInt32(0, v, true)
-    if (module.exports.DEBUG) {
+    if (DEBUG) {
       console.log(`int32_t[${v}]: ${toHex(b)}`)
     }
     yield b
   },
 
+  /** @param {any} v */
   uint32_t: function * writeUInt32LE (v) {
     if (typeof v !== 'number') {
       throw new Error('Encoding uint32 requires a "number" type')
@@ -74,12 +85,13 @@ const encoders = {
     const b = new Uint8Array(4)
     const dv = new DataView(b.buffer, b.byteOffset, b.length)
     dv.setUint32(0, v, true)
-    if (module.exports.DEBUG) {
+    if (DEBUG) {
       console.log(`uint32_t[${v}]: ${toHex(b)}`)
     }
     yield b
   },
 
+  /** @param {any} v */
   uint256: function * writeHash (v) {
     if (!(v instanceof Uint8Array)) {
       throw new Error('Encoding uint256 requires a "Uint8Array" type')
@@ -87,23 +99,25 @@ const encoders = {
     if (v.length !== 32) {
       throw new Error('Encoding uint256 requires 32-byte Uint8Array')
     }
-    if (module.exports.DEBUG) {
+    if (DEBUG) {
       console.log(`uint256: ${toHex(v)}`)
     }
     yield v
   },
 
+  /** @param {any} v */
   compactSlice: function * writeCompactSlice (v) {
     if (!(v instanceof Uint8Array)) {
       throw new Error('Encoding compact slice requires a "Uint8Array" type')
     }
-    if (module.exports.DEBUG) {
+    if (DEBUG) {
       console.log(`compactSlice[${v.length}]: ${toHex(writeCompactSize(v.length))} + ${toHex(v)}`)
     }
     yield writeCompactSize(v.length)
     yield v
   },
 
+  /** @param {any} v */
   int64_t: function * writeBigInt64LE (v) {
     const buf = new Uint8Array(8)
     buf[0] = v
@@ -118,7 +132,7 @@ const encoders = {
     buf[5] = hi >> 8
     buf[6] = hi >> 16
     buf[7] = hi >> 24
-    if (module.exports.DEBUG) {
+    if (DEBUG) {
       console.log(`int64_t: ${toHex(buf)}`)
     }
     yield buf
@@ -131,7 +145,7 @@ const encoders = {
     if (!(v instanceof Uint8Array)) {
       throw new Error('Encoding slice requires a "Uint8Array" type')
     }
-    if (module.exports.DEBUG) {
+    if (DEBUG) {
       console.log(`slice: ${toHex(v)}`)
     }
     yield v
@@ -139,7 +153,10 @@ const encoders = {
 }
 
 /**
- * @type {Encoder}
+ * @param {string} typ
+ * @param {any} value
+ * @param {any} args
+ * @returns {Generator<Uint8Array, void, undefined>}
  */
 function * encoder (typ, value, args) {
   // aliases
@@ -167,7 +184,7 @@ function * encoder (typ, value, args) {
     if (!Array.isArray(arr)) {
       throw new Error(`Encoding std::vector (${typ}) requires an array`)
     }
-    if (module.exports.DEBUG) {
+    if (DEBUG) {
       console.log(`cs[${arr.length}]: ${toHex(writeCompactSize(arr.length))}`)
     }
     yield writeCompactSize(arr.length)
@@ -249,14 +266,7 @@ function readCompactSize (buf, offset) {
     return [nSizeRet, 5]
   } else {
     // shouldn't need this, no way are we going to encounter 64-bit ints for decode sizes here
-    // const nSizeRet = buf.readBigInt64LE(offset)
-    // throw new Error(`readCompactSize() size too large (probably ${nSizeRet})`)
     throw new Error('readCompactSize() size too large')
-    /*
-    nSizeRet = ser_readdata64(is);
-    if (nSizeRet < 0x100000000ULL)
-        throw std::ios_base::failure("non-canonical ReadCompactSize()");
-    */
   }
 }
 
@@ -304,7 +314,7 @@ function sizeAsserted (read, expected) {
  * @param {boolean} [strictLengthUsage]
  * @returns {any}
  */
-function decodeType (buf, type, strictLengthUsage) {
+export function decodeType (buf, type, strictLengthUsage) {
   let pos = 0
   /** @type {Record<string, any>} */
   const state = {}
@@ -346,19 +356,6 @@ function decodeType (buf, type, strictLengthUsage) {
       // not browser friendly, need to simulate:
       // const i = buf.readBigInt64LE(pos)
 
-      // nicer BigInt version:
-      /*
-      const lo = BigInt(buf.readInt32LE(pos))
-      const hi = BigInt(buf.readInt32LE(pos + 4))
-      const i = (BigInt(2) ** BigInt(32)) * hi + lo
-      */
-      // risky plain, but currently (2019) browser-safe version
-      /*
-      const lo = buf.readUInt32LE(pos)
-      const hi = buf.readUInt32LE(pos + 4)
-      const i = (2 ** 32) * hi + lo
-      pos += 8
-      */
       // more manual version
       assertAvailable(8)
       const hi = buf[pos + 4] +
@@ -560,20 +557,11 @@ function decodeType (buf, type, strictLengthUsage) {
 /**
  * @param {Record<string, any>} classes
  */
-function setup (classes) {
-  // const classes = require('./classes/')
+export function setup (classes) {
   Object.values(classes).reduce((p, c) => {
     p[c._nativeName] = c
     return p
   }, classRegistry)
-
-  return {
-    decodeType,
-    encodeType,
-    encoder
-  }
 }
 
-module.exports = setup
-module.exports.compactSizeSize = compactSizeSize
-module.exports.DEBUG = false
+export { encodeType, encoder }

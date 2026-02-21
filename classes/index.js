@@ -1,6 +1,5 @@
-module.exports.BitcoinBlock = require('./Block')
-module.exports.BitcoinBlockHeaderOnly = require('./Block').BitcoinBlockHeaderOnly
-module.exports.BitcoinTransaction = require('./Transaction')
-module.exports.BitcoinTransactionIn = require('./TransactionIn')
-module.exports.BitcoinTransactionOut = require('./TransactionOut')
-module.exports.BitcoinOutPoint = require('./OutPoint')
+export { default as BitcoinBlock, BitcoinBlockHeaderOnly } from './Block.js'
+export { default as BitcoinTransaction } from './Transaction.js'
+export { default as BitcoinTransactionIn } from './TransactionIn.js'
+export { default as BitcoinTransactionOut } from './TransactionOut.js'
+export { default as BitcoinOutPoint } from './OutPoint.js'

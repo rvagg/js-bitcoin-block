@@ -1,10 +1,10 @@
-const { toHashHex, fromHashHex, decodeProperties, isHexString } = require('./class-utils')
-const { scriptToAsmStr } = require('./script')
-const BitcoinOutPoint = require('./OutPoint')
-const { toHex, fromHex } = require('../util')
+import { toHashHex, fromHashHex, decodeProperties, isHexString } from './class-utils.js'
+import { scriptToAsmStr } from './script.js'
+import BitcoinOutPoint from './OutPoint.js'
+import { toHex, fromHex } from '../util.js'
 
-/** @typedef {import('../interface').TransactionInPorcelain} TransactionInPorcelain */
-/** @typedef {import('../interface').TransactionInCoinbasePorcelain} TransactionInCoinbasePorcelain */
+/** @typedef {import('../interface.js').TransactionInPorcelain} TransactionInPorcelain */
+/** @typedef {import('../interface.js').TransactionInCoinbasePorcelain} TransactionInCoinbasePorcelain */
 
 /**
  * A class representation of a Bitcoin TransactionIn, multiple of which are contained within each
@@ -183,4 +183,4 @@ CScript scriptSig;
 uint32_t sequence;
 `)
 
-module.exports = BitcoinTransactionIn
+export default BitcoinTransactionIn

@@ -1,6 +1,6 @@
 # bitcoin-block: A Bitcoin block interface for JavaScript
 
-![CI](https://github.com/rvagg/js-bitcoin-block/workflows/CI/badge.svg?branch=master)
+[![NPM](https://nodei.co/npm/bitcoin-block.svg?style=flat&data=n,v&color=blue)](https://nodei.co/npm/bitcoin-block/)
 
 **bitcoin-block** implements the basic block primitives: `BitcoinBlock`, `BitcoinTransaction`, `BitcoinTransactionIn`, `BitcoinTransactionOut` and `BitcoinOutPoint`. These primitives are able to decode raw block binary form and present the same data available via the Bitcoin Core RPC (and via the `bitcoin-cli` utility) and many online block explorers minus contextual chain data that is not available in individual blocks (e.g. height, confirmations, next block). These primitives can also re-encode binary block form given the minimum required block and data.
 
@@ -10,20 +10,20 @@ Top-level primitives also implement a `toPorcelain()` method that converts the b
 
 Full compatibility, including round-trip to from binary, to JSON, back to binary form, has been tested across the entire Bitcoin blockchain (to date of writing).
 
+## Requirements
+
+Node.js >= 20
+
 ## Example
 
 Make your own block explorer from raw block data:
 
 ```js
-const fs = require('fs')
-const {
-  BitcoinBlock,
-  toHashHex,
-  COIN
-} = require('./')
+import fs from 'node:fs'
+import { BitcoinBlock, toHashHex, COIN } from 'bitcoin-block'
 
 // read in hex data from a file, as you get from `bitcoin-cli getblock <hash> 0`
-const rawBlockData = Buffer.from(fs.readFileSync(process.argv[2], 'ascii'), 'hex')
+const rawBlockData = new Uint8Array(Buffer.from(fs.readFileSync(process.argv[2], 'ascii'), 'hex'))
 
 const block = BitcoinBlock.decode(rawBlockData)
 
