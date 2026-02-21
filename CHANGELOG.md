@@ -1,3 +1,19 @@
+## [3.0.0](https://github.com/rvagg/js-bitcoin-block/compare/v2.0.2...v3.0.0) (2026-02-21)
+
+### ⚠ BREAKING CHANGES
+
+* package is now ESM-only ("type": "module"), requires Node.js >= 20
+
+### Features
+
+* modernise to ESM, replace crypto deps with @noble/hashes ([#41](https://github.com/rvagg/js-bitcoin-block/issues/41)) ([b6fcc6e](https://github.com/rvagg/js-bitcoin-block/commit/b6fcc6ee7f86fc6dbc64a7b9a9fa1d26cf4b1255))
+
+### Trivial Changes
+
+* **deps-dev:** bump typescript from 4.9.5 to 5.0.4 ([#31](https://github.com/rvagg/js-bitcoin-block/issues/31)) ([794131a](https://github.com/rvagg/js-bitcoin-block/commit/794131a9760151e4d05c9068d906f53c92db5231))
+* **deps:** bump actions/checkout from 3.3.0 to 3.5.2 ([#33](https://github.com/rvagg/js-bitcoin-block/issues/33)) ([bf6e44c](https://github.com/rvagg/js-bitcoin-block/commit/bf6e44c63418a7435415087b7345ce099d6debbb))
+* **deps:** bump multiformats from 9.9.0 to 11.0.2 ([#25](https://github.com/rvagg/js-bitcoin-block/issues/25)) ([1cf2947](https://github.com/rvagg/js-bitcoin-block/commit/1cf2947d28eec94b7f590741a882b9e70986937e))
+
 ## [2.0.2](https://github.com/rvagg/js-bitcoin-block/compare/v2.0.1...v2.0.2) (2023-01-06)
 
 
