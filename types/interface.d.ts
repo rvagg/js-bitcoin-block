@@ -1,5 +1,5 @@
-export declare type Encoder = (typ: string, value?: any, args?: any) => Generator<Uint8Array, void, unknown>;
-export declare type ValueEncoder = (value: any) => Generator<Uint8Array, void, unknown>;
+export type Encoder = (typ: string, value?: any, args?: any) => Generator<Uint8Array, void, unknown>;
+export type ValueEncoder = (value: any) => Generator<Uint8Array, void, unknown>;
 export interface Decoder {
     currentPosition(): number;
     readUInt8(): number;

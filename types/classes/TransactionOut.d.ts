@@ -1,5 +1,6 @@
-export = BitcoinTransactionOut;
-/** @typedef {import('../interface').TransactionOutPorcelain} TransactionOutPorcelain */
+export default BitcoinTransactionOut;
+export type TransactionOutPorcelain = import("../interface.js").TransactionOutPorcelain;
+/** @typedef {import('../interface.js').TransactionOutPorcelain} TransactionOutPorcelain */
 /**
  * A class representation of a Bitcoin TransactionOut, multiple of which are contained within each
  * {@link BitcoinTransaction} in its `vout` array.
@@ -18,14 +19,14 @@ declare class BitcoinTransactionOut {
      * @param {Uint8Array} scriptPubKey
      * @constructs BitcoinTransactionOut
      */
-    constructor(value: BigInt | number, scriptPubKey: Uint8Array);
+    constructor(value: bigint | number, scriptPubKey: Uint8Array);
     value: number;
-    scriptPubKey: Uint8Array;
+    scriptPubKey: Uint8Array<ArrayBufferLike>;
     /**
      * @param {number} [n]
      * @returns {TransactionOutPorcelain}
      */
-    toJSON(n?: number | undefined): TransactionOutPorcelain;
+    toJSON(n?: number): TransactionOutPorcelain;
     /**
     * Convert to a serializable form that has nice stringified hashes and other simplified forms. May
     * be useful for simplified inspection.
@@ -42,35 +43,33 @@ declare class BitcoinTransactionOut {
     toPorcelain(): object;
 }
 declare namespace BitcoinTransactionOut {
-    export { fromPorcelain, _nativeName, _decodePropertiesDescriptor, _encodePropertiesDescriptor, TransactionOutPorcelain };
+    /**
+     * Instantiate a `BitcoinTransactionIn` from porcelain data. This is the inverse of
+     * {@link BitcoinTransactionOut#toPorcelain}.
+     *
+     * This function is normally called from {@link BitcoinTransaction.fromPorcelain} to instantiate the
+     * each element of the `vin` array.
+     *
+     * Fields required to instantiate a transaction are:
+     *
+     * * `value` number - the BTC value of this transaction (not satoshis, which are used in the
+     *   BitcoinTransactionOut).
+     * * `scriptPubKey` object:
+     *   - `scriptPubKey.hex` hex string - the raw scriptPubKey data (the asm isn't used)
+     *
+     * @function
+     * @param {TransactionOutPorcelain} porcelain the porcelain form of a BitcoinTransactionOut
+     * @returns {BitcoinTransactionOut}
+     */
+    function fromPorcelain(porcelain: TransactionOutPorcelain): BitcoinTransactionOut;
+    let _nativeName: string;
+    let _decodePropertiesDescriptor: {
+        type: string;
+        name: string;
+    }[];
+    let _encodePropertiesDescriptor: {
+        type: string;
+        name: string;
+    }[];
 }
-type TransactionOutPorcelain = import('../interface').TransactionOutPorcelain;
-/**
- * Instantiate a `BitcoinTransactionIn` from porcelain data. This is the inverse of
- * {@link BitcoinTransactionOut#toPorcelain}.
- *
- * This function is normally called from {@link BitcoinTransaction.fromPorcelain} to instantiate the
- * each element of the `vin` array.
- *
- * Fields required to instantiate a transaction are:
- *
- * * `value` number - the BTC value of this transaction (not satoshis, which are used in the
- *   BitcoinTransactionOut).
- * * `scriptPubKey` object:
- *   - `scriptPubKey.hex` hex string - the raw scriptPubKey data (the asm isn't used)
- *
- * @function
- * @param {TransactionOutPorcelain} porcelain the porcelain form of a BitcoinTransactionOut
- * @returns {BitcoinTransactionOut}
- */
-declare function fromPorcelain(porcelain: TransactionOutPorcelain): BitcoinTransactionOut;
-declare var _nativeName: string;
-declare var _decodePropertiesDescriptor: {
-    type: string;
-    name: string;
-}[];
-declare var _encodePropertiesDescriptor: {
-    type: string;
-    name: string;
-}[];
 //# sourceMappingURL=TransactionOut.d.ts.map

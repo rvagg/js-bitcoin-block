@@ -1,9 +1,9 @@
-const { decodeProperties, toHashHex } = require('./class-utils')
+import { decodeProperties, toHashHex } from './class-utils.js'
 
 /**
  * A class representation of a Bitcoin OutPoint for a {@link BitcoinTransactionIn}.
  *
- * This class isn't explicitly exported, access it for direct use with `require('bitcoin-block/classes/OutPoint')`.
+ * This class isn't explicitly exported, access it for direct use with `import BitcoinOutPoint from 'bitcoin-block/classes/OutPoint'`.
  *
  * @property {Uint8Array} hash
  * @property {number} n
@@ -49,4 +49,4 @@ uint256 hash;
 uint32_t n;
 `)
 
-module.exports = BitcoinOutPoint
+export default BitcoinOutPoint

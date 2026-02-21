@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
-const { Transform } = require('stream')
-const { createReadStream } = require('fs')
-const { BitcoinBlock } = require('./bitcoin-block.js')
+import { Transform } from 'node:stream'
+import { createReadStream } from 'node:fs'
+import { BitcoinBlock } from './bitcoin-block.js'
 
-/** @typedef {import('fs').ReadStream} ReadStream */
+/** @typedef {import('node:fs').ReadStream} ReadStream */
 
 /**
  * @param {ReadStream} stream

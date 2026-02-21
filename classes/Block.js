@@ -1,4 +1,4 @@
-const {
+import {
   decodeProperties,
   toHashHex,
   fromHashHex,
@@ -7,14 +7,14 @@ const {
   dblSha2256,
   merkleRoot,
   isHexString
-} = require('./class-utils')
-const { compactSizeSize } = require('../coding')
-const { toHex, concat } = require('../util')
-const BitcoinTransaction = require('./Transaction')
+} from './class-utils.js'
+import { compactSizeSize } from '../coding.js'
+import { toHex, concat } from '../util.js'
+import BitcoinTransaction from './Transaction.js'
 
-/** @typedef {import('../interface').Encoder} Encoder */
-/** @typedef {import('../interface').BlockPorcelain} BlockPorcelain */
-/** @typedef {import('../interface').BlockHeaderPorcelain} BlockHeaderPorcelain */
+/** @typedef {import('../interface.js').Encoder} Encoder */
+/** @typedef {import('../interface.js').BlockPorcelain} BlockPorcelain */
+/** @typedef {import('../interface.js').BlockHeaderPorcelain} BlockHeaderPorcelain */
 
 /**
  * A class representation of a Bitcoin Block. Parent for all of the data included in the raw block
@@ -173,6 +173,7 @@ class BitcoinBlock {
       throw new Error('Cannot calculate merkle root without transactions')
     }
     const isNoWitness = noWitness === HASH_NO_WITNESS
+    /** @type {Uint8Array[]} */
     const hashes = isNoWitness ? [] : [new Uint8Array(32)] // coinbase transaction is 0x000... for fill merkle
     for (let i = isNoWitness ? 0 : 1; i < this.tx.length; i++) {
       const hash = this.tx[i][isNoWitness ? 'txid' : 'hash']
@@ -357,7 +358,7 @@ BitcoinBlock.fromPorcelain = function fromPorcelain (porcelain) {
     if (!Array.isArray(porcelain.tx)) {
       throw new TypeError('tx property must be an array')
     }
-    tx = porcelain.tx.map((txPorc) => {
+    tx = porcelain.tx.map((/** @type {any} */ txPorc) => {
       if (typeof txPorc !== 'object') {
         throw new Error('Cannot create transactions from incomplete porcelain')
       }
@@ -491,8 +492,8 @@ uint32_t bits;
 uint32_t nonce;
 `)
 
-module.exports = BitcoinBlock
-module.exports.BitcoinBlockHeaderOnly = BitcoinBlockHeaderOnly
+export default BitcoinBlock
+export { BitcoinBlockHeaderOnly }
 
 // methods in bitcoin-block.js
 

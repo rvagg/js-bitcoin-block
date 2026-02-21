@@ -1,7 +1,6 @@
-export var BitcoinBlock: typeof import("./Block");
-export var BitcoinBlockHeaderOnly: typeof import("./Block").BitcoinBlockHeaderOnly;
-export var BitcoinTransaction: typeof import("./Transaction");
-export var BitcoinTransactionIn: typeof import("./TransactionIn");
-export var BitcoinTransactionOut: typeof import("./TransactionOut");
-export var BitcoinOutPoint: typeof import("./OutPoint");
+export { default as BitcoinTransaction } from "./Transaction.js";
+export { default as BitcoinTransactionIn } from "./TransactionIn.js";
+export { default as BitcoinTransactionOut } from "./TransactionOut.js";
+export { default as BitcoinOutPoint } from "./OutPoint.js";
+export { default as BitcoinBlock, BitcoinBlockHeaderOnly } from "./Block.js";
 //# sourceMappingURL=index.d.ts.map

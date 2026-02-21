@@ -1,13 +1,14 @@
-const assert = require('chai').assert
-// pretty diff but expensive for large diffs
-// const assert = require('assert-diff')
-const { BitcoinBlock, BitcoinTransaction } = require('../bitcoin-block.js')
+import { assert } from 'chai'
+import { BitcoinBlock, BitcoinTransaction } from '../bitcoin-block.js'
+import { toHashHex, dblSha2256 } from '../classes/class-utils.js'
+import { toHex } from '../util.js'
+// for debugging, uncomment:
+// import { fromHex } from '../util.js'
+// import { writeFileSync } from 'node:fs'
+// import { setDebug } from '../coding.js'
 
-const { toHashHex, dblSha2256 } = require('../classes/class-utils.js')
-const { toHex } = require('../util.js')
-
-/** @typedef {import('../interface').BlockPorcelain} BlockPorcelain */
-/** @typedef {import('../interface').BlockHeaderPorcelain} BlockHeaderPorcelain */
+/** @typedef {import('../interface.js').BlockPorcelain} BlockPorcelain */
+/** @typedef {import('../interface.js').BlockHeaderPorcelain} BlockHeaderPorcelain */
 
 /**
  * round difficulty to 2 decimal places, it's a calculated value
@@ -128,21 +129,20 @@ function verifyRoundTrip (decoded, expected, block) {
   from.tx = from.tx.map((/** @type {any} */ tx) => Object.assign({}, tx))
   const newBlock = BitcoinBlock.fromPorcelain(from)
   /* for debugging JSON output
-  require('fs').writeFileSync('act.json', JSON.stringify(Object.assign({}, roundDifficulty(cleanActualBlock(newBlock.toPorcelain()))), null, 2), 'utf8')
-  require('fs').writeFileSync('exp.json', JSON.stringify(Object.assign({}, roundDifficulty(expected)), null, 2), 'utf8')
+  writeFileSync('act.json', JSON.stringify(Object.assign({}, roundDifficulty(cleanActualBlock(newBlock.toPorcelain()))), null, 2), 'utf8')
+  writeFileSync('exp.json', JSON.stringify(Object.assign({}, roundDifficulty(expected)), null, 2), 'utf8')
   /**/
   const newBlockClean = roundDifficulty(cleanActualBlock(newBlock.toPorcelain()))
   assert.deepStrictEqual(newBlockClean, roundDifficulty(expected), 're-instantiated data')
   // encode newly instantiated
   const encodedNew = newBlock.encode()
-  /* for debug - compare hex output and optionally watch encoding
-  // require('../coding').DEBUG = true
+  /* for debugging - compare hex output, optionally enable setDebug(true) for encoding trace
   const w = (f, b) => {
     const a = []
     for (let i = 0; i < b.length; i += 50) {
-      a.push(`${i}: ` + b.slice(i, i + toHex(50)))
+      a.push(`${i}: ` + toHex(b.slice(i, i + 50)))
     }
-    require('fs').writeFileSync(f, a.join('\n'), 'utf8')
+    writeFileSync(f, a.join('\n'), 'utf8')
   }
   w('act.hex', encodedNew)
   w('exp.hex', block)
@@ -159,9 +159,9 @@ function verifyTransactionRoundTrip (tx, expectedTx, i) {
   // instantiate new
   const newTransaction = BitcoinTransaction.fromPorcelain(Object.assign({}, tx.toPorcelain()))
   /* for debugging JSON output
-  require('fs').writeFileSync('act.json', JSON.stringify(Object.assign({}, newTransaction.toPorcelain(), { hex: null }), null, 2), 'utf8')
-  require('fs').writeFileSync('exp.json', JSON.stringify(Object.assign({}, expectedTx, { hex: null }), null, 2), 'utf8')
-  */
+  writeFileSync('act.json', JSON.stringify(Object.assign({}, newTransaction.toPorcelain(), { hex: null }), null, 2), 'utf8')
+  writeFileSync('exp.json', JSON.stringify(Object.assign({}, expectedTx, { hex: null }), null, 2), 'utf8')
+  /**/
   assert.deepStrictEqual(roundDifficulty(cleanActualTransaction(newTransaction.toPorcelain(), i)), roundDifficulty(expectedTx), `re-instantiated data (${i})`)
   // encode newly instantiated
   const encodedNew = newTransaction.encode()
@@ -182,21 +182,20 @@ function verifyTransaction (tx, expectedTx, i) {
   // porcelain form correct?
   const serializableTx = cleanActualTransaction(tx.toPorcelain(), i)
   /* for debugging JSON output
-  require('fs').writeFileSync('act.json', JSON.stringify(Object.assign({}, serializableTx, { hex: null }), null, 2), 'utf8')
-  require('fs').writeFileSync('exp.json', JSON.stringify(Object.assign({}, expectedTx, { hex: null }), null, 2), 'utf8')
-  */
+  writeFileSync('act.json', JSON.stringify(Object.assign({}, serializableTx, { hex: null }), null, 2), 'utf8')
+  writeFileSync('exp.json', JSON.stringify(Object.assign({}, expectedTx, { hex: null }), null, 2), 'utf8')
+  /**/
   assert.deepStrictEqual(serializableTx, expectedTx, `transaction decode ${i}`)
 
   const encodedTx = tx.encode()
   // full encoded form matches expected
-  /* for debug - compare hex output and optionally watch encoding
-  // require('../coding').DEBUG = true
+  /* for debugging - compare hex output, optionally enable setDebug(true) for encoding trace
   const w = (f, b) => {
     const a = []
     for (let i = 0; i < b.length; i += 50) {
-      a.push(`${i}: ` + b.slice(i, i + toHex(50)))
+      a.push(`${i}: ` + toHex(b.slice(i, i + 50)))
     }
-    require('fs').writeFileSync(f, a.join('\n'), 'utf8')
+    writeFileSync(f, a.join('\n'), 'utf8')
   }
   w('act.hex', encodedTx)
   w('exp.hex', fromHex(expectedTx.hex))
@@ -307,4 +306,4 @@ function test (block, expected) {
   verifyRoundTrip(decoded, expected, block)
 }
 
-module.exports = test
+export default test

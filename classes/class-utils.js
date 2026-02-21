@@ -1,6 +1,6 @@
-const { toHex, fromHex, concat } = require('../util')
-const { hash: sha256 } = require('@stablelib/sha256')
-const RIPEMD160 = require('@rvagg/ripemd160')
+import { toHex, fromHex, concat } from '../util.js'
+import { sha256 } from '@noble/hashes/sha2.js'
+import { ripemd160 as _ripemd160 } from '@noble/hashes/legacy.js'
 const WITNESS_SCALE_FACTOR = 4
 const SEGWIT_HEIGHT = 481824
 
@@ -108,7 +108,7 @@ function dblSha2256 (bytes) {
  * @returns {Uint8Array}
  */
 function ripemd160 (bytes) {
-  return /** @type {Uint8Array} */ (new RIPEMD160().update(bytes).digest())
+  return _ripemd160(bytes)
 }
 
 /**
@@ -192,16 +192,4 @@ function isHexString (str, len) {
   return (len === undefined || str.length === len) && /^[0-9a-f]*$/.test(str)
 }
 
-module.exports.decodeProperties = decodeProperties
-module.exports.toHashHex = toHashHex
-module.exports.fromHashHex = fromHashHex
-module.exports.dblSha2256 = dblSha2256
-module.exports.ripemd160 = ripemd160
-module.exports.hash160 = hash160
-module.exports.merkleRoot = merkleRoot
-module.exports.merkle = merkle
-module.exports.isHexString = isHexString
-module.exports.COIN = COIN
-module.exports.WITNESS_SCALE_FACTOR = WITNESS_SCALE_FACTOR
-module.exports.SEGWIT_HEIGHT = SEGWIT_HEIGHT
-module.exports.HASH_NO_WITNESS = HASH_NO_WITNESS
+export { decodeProperties, toHashHex, fromHashHex, dblSha2256, ripemd160, hash160, merkleRoot, merkle, isHexString, COIN, WITNESS_SCALE_FACTOR, SEGWIT_HEIGHT, HASH_NO_WITNESS }

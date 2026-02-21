@@ -2,7 +2,7 @@
  * @param {Uint8Array[]} buffers
  * @returns {Uint8Array}
  */
-function concat (buffers) {
+export function concat (buffers) {
   if (!buffers.length) {
     return new Uint8Array(0)
   }
@@ -38,7 +38,7 @@ const hexSliceLookupTable = (function () {
  * @param {Uint8Array} buf
  * @returns {string}
  */
-function toHex (buf) {
+export function toHex (buf) {
   let ret = ''
   for (let i = 0; i < buf.length; i++) {
     ret += hexSliceLookupTable[buf[i]]
@@ -50,14 +50,10 @@ function toHex (buf) {
  * @param {string} hex
  * @returns {Uint8Array}
  */
-function fromHex (hex) {
+export function fromHex (hex) {
   const buf = new Uint8Array(hex.length / 2)
   for (let i = 0; i < hex.length / 2; i++) {
     buf[i] = parseInt(hex.substr(i * 2, 2), 16)
   }
   return buf
 }
-
-module.exports.concat = concat
-module.exports.toHex = toHex
-module.exports.fromHex = fromHex
