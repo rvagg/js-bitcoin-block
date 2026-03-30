@@ -1,3 +1,10 @@
+## [3.0.1](https://github.com/rvagg/js-bitcoin-block/compare/v3.0.0...v3.0.1) (2026-03-30)
+
+### Trivial Changes
+
+* **deps-dev:** bump typescript from 5.9.3 to 6.0.2 ([ef643a6](https://github.com/rvagg/js-bitcoin-block/commit/ef643a68d4042e9624e0be419d42d60a34c9e3df))
+* update deps & update for typescript 6 ([a64d676](https://github.com/rvagg/js-bitcoin-block/commit/a64d676b461dc2113bca2451658d9e544e5f23e8))
+
 ## [3.0.0](https://github.com/rvagg/js-bitcoin-block/compare/v2.0.2...v3.0.0) (2026-02-21)
 
 ### ⚠ BREAKING CHANGES
