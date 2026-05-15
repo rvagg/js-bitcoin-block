@@ -17,7 +17,7 @@
   "dependencies": {
     "@noble/hashes": "^2.0.1",
     "bech32": "^2.0.0",
-    "multiformats": "^13.4.2"
+    "multiformats": "^14.0.0"
   },
   "devDependencies": {
     "@semantic-release/changelog": "^6.0.3",
