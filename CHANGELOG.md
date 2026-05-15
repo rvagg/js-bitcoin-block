@@ -1,3 +1,9 @@
+## [3.0.4](https://github.com/rvagg/js-bitcoin-block/compare/v3.0.3...v3.0.4) (2026-05-15)
+
+### Trivial Changes
+
+* **deps:** bump multiformats from 13.4.2 to 14.0.0 ([#45](https://github.com/rvagg/js-bitcoin-block/issues/45)) ([024e823](https://github.com/rvagg/js-bitcoin-block/commit/024e823ef9a8d465f065679ba98d662918b68555))
+
 ## [3.0.3](https://github.com/rvagg/js-bitcoin-block/compare/v3.0.2...v3.0.3) (2026-04-29)
 
 ### Trivial Changes
