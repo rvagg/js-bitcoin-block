@@ -1,3 +1,9 @@
+## [3.0.6](https://github.com/rvagg/js-bitcoin-block/compare/v3.0.5...v3.0.6) (2026-06-23)
+
+### Trivial Changes
+
+* **deps:** bump actions/checkout from 6.0.3 to 7.0.0 ([#47](https://github.com/rvagg/js-bitcoin-block/issues/47)) ([09f32b9](https://github.com/rvagg/js-bitcoin-block/commit/09f32b9c2a15f093ce46c052e908056bec090c2a))
+
 ## [3.0.5](https://github.com/rvagg/js-bitcoin-block/compare/v3.0.4...v3.0.5) (2026-06-22)
 
 ### Trivial Changes
