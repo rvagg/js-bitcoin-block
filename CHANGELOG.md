@@ -1,3 +1,9 @@
+## [3.0.7](https://github.com/rvagg/js-bitcoin-block/compare/v3.0.6...v3.0.7) (2026-07-01)
+
+### Trivial Changes
+
+* **deps-dev:** bump @types/node from 25.9.4 to 26.0.1 ([#49](https://github.com/rvagg/js-bitcoin-block/issues/49)) ([08ef5a5](https://github.com/rvagg/js-bitcoin-block/commit/08ef5a57482c4db660b90bfc344f6cc1c46d2bf8))
+
 ## [3.0.6](https://github.com/rvagg/js-bitcoin-block/compare/v3.0.5...v3.0.6) (2026-06-23)
 
 ### Trivial Changes
