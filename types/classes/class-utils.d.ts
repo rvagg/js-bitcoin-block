@@ -1,11 +1,24 @@
+declare const WITNESS_SCALE_FACTOR = 4;
+declare const SEGWIT_HEIGHT = 481824;
 /**
- * @param {string} propertiesDescriptor
- * @returns {{type:string, name:string}[]}
+ * The `COIN` constant is the number of _satoshis_ in 1 BTC, i.e. 100,000,000.
+ * Transaction store values in satoshis so must be divided by `COIN` to find the
+ * amount in BTC.
+ *
+ * @name COIN
+ * @constant
  */
-export function decodeProperties(propertiesDescriptor: string): {
-    type: string;
-    name: string;
-}[];
+declare const COIN = 100000000;
+/**
+ * `HASH_NO_WITNESS` is available on {@link BitcoinBlock} and {@link BitcoinTransaction}
+ * and is used as an optional argument to their respective `encode()` methods
+ * to signal that encoded transactions should not include witness data (i.e. their
+ * pre SegWit form and the form used to generate the `txid` and transaction merkle root).
+ *
+ * @name HASH_NO_WITNESS
+ * @constant
+ */
+declare const HASH_NO_WITNESS: unique symbol;
 /**
  * Takes a hash, in byte form, and returns it as a big-endian uint256 in hex encoded form.
  * This format is typically used by Bitcoin in its hash identifiers, particularly its
@@ -20,7 +33,7 @@ export function decodeProperties(propertiesDescriptor: string): {
  * @param {Uint8Array} hash
  * @returns {string}
  */
-export function toHashHex(hash: Uint8Array): string;
+declare function toHashHex(hash: Uint8Array): string;
 /**
  * Takes a string containing a big-endian uint256 in hex encoded form and converts it
  * to a standard byte array.
@@ -34,7 +47,15 @@ export function toHashHex(hash: Uint8Array): string;
  * @param {string} hashStr
  * @returns {Uint8Array}
  */
-export function fromHashHex(hashStr: string): Uint8Array;
+declare function fromHashHex(hashStr: string): Uint8Array;
+/**
+ * @param {string} propertiesDescriptor
+ * @returns {{type:string, name:string}[]}
+ */
+declare function decodeProperties(propertiesDescriptor: string): {
+    type: string;
+    name: string;
+}[];
 /**
  * Perform a standard Bitcoin double SHA2-256 hash on a binary blob.
  * SHA2-256(SHA2-256(bytes))
@@ -43,17 +64,17 @@ export function fromHashHex(hashStr: string): Uint8Array;
  * @returns {Uint8Array} a 32-byte digest
  * @function
  */
-export function dblSha2256(bytes: Uint8Array): Uint8Array;
+declare function dblSha2256(bytes: Uint8Array): Uint8Array;
 /**
  * @param {Uint8Array} bytes
  * @returns {Uint8Array}
  */
-export function ripemd160(bytes: Uint8Array): Uint8Array;
+declare function ripemd160(bytes: Uint8Array): Uint8Array;
 /**
  * @param {Uint8Array} bytes
  * @returns {Uint8Array}
  */
-export function hash160(bytes: Uint8Array): Uint8Array;
+declare function hash160(bytes: Uint8Array): Uint8Array;
 /**
  * Generate a merkle root using {@link dblSha2256} on each node. The merkle tree uses Bitcoin's
  * algorithm whereby a level with an odd number of nodes has the last node duplicated.
@@ -62,7 +83,7 @@ export function hash160(bytes: Uint8Array): Uint8Array;
  * @returns {Uint8Array} the merkle root hash
  * @function
  */
-export function merkleRoot(hashes: Array<Uint8Array>): Uint8Array;
+declare function merkleRoot(hashes: Array<Uint8Array>): Uint8Array;
 /**
  * Generate a merkle tree using {@link dblSha2256} on each node. The merkle tree uses Bitcoin's
  * algorithm whereby a level with an odd number of nodes has the last node duplicated.
@@ -82,7 +103,7 @@ export function merkleRoot(hashes: Array<Uint8Array>): Uint8Array;
  * @generator
  * @function
  */
-export function merkle(hashes: Array<Uint8Array>): Generator<{
+declare function merkle(hashes: Array<Uint8Array>): Generator<{
     hash: Uint8Array<ArrayBufferLike>;
     data?: undefined;
 } | {
@@ -94,26 +115,6 @@ export function merkle(hashes: Array<Uint8Array>): Generator<{
  * @param {number} [len]
  * @returns {boolean}
  */
-export function isHexString(str: string, len?: number): boolean;
-/**
- * The `COIN` constant is the number of _satoshis_ in 1 BTC, i.e. 100,000,000.
- * Transaction store values in satoshis so must be divided by `COIN` to find the
- * amount in BTC.
- *
- * @name COIN
- * @constant
- */
-export const COIN: 100000000;
-export const WITNESS_SCALE_FACTOR: 4;
-export const SEGWIT_HEIGHT: 481824;
-/**
- * `HASH_NO_WITNESS` is available on {@link BitcoinBlock} and {@link BitcoinTransaction}
- * and is used as an optional argument to their respective `encode()` methods
- * to signal that encoded transactions should not include witness data (i.e. their
- * pre SegWit form and the form used to generate the `txid` and transaction merkle root).
- *
- * @name HASH_NO_WITNESS
- * @constant
- */
-export const HASH_NO_WITNESS: unique symbol;
+declare function isHexString(str: string, len?: number): boolean;
+export { decodeProperties, toHashHex, fromHashHex, dblSha2256, ripemd160, hash160, merkleRoot, merkle, isHexString, COIN, WITNESS_SCALE_FACTOR, SEGWIT_HEIGHT, HASH_NO_WITNESS };
 //# sourceMappingURL=class-utils.d.ts.map
