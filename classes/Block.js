@@ -288,7 +288,7 @@ class BitcoinBlock {
    * It is possible to perform a `decode().encode()` round-trip for any given valid
    * block data and produce the same binary output.
    *
-   * @param {HASH_NO_WITNESS} [_noWitness] - any encoding args, currently only
+   * @param {typeof HASH_NO_WITNESS} [_noWitness] - any encoding args, currently only
    * `BitcoinBlock.HASH_NO_WITNESS` is a valid argument, which when provided will
    * return the block with transactions encoded _without_ witness data.
    * @name BitcoinBlock#encode

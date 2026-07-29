@@ -1,4 +1,3 @@
-export default BitcoinOutPoint;
 /**
  * A class representation of a Bitcoin OutPoint for a {@link BitcoinTransactionIn}.
  *
@@ -9,6 +8,8 @@ export default BitcoinOutPoint;
  * @class
  */
 declare class BitcoinOutPoint {
+    hash: Uint8Array<ArrayBufferLike>;
+    n: number;
     /**
      * Instantiate a new `BitcoinOutPoint`.
      *
@@ -19,8 +20,6 @@ declare class BitcoinOutPoint {
      * @constructs BitcoinOutPoint
      */
     constructor(hash: Uint8Array, n: number);
-    hash: Uint8Array<ArrayBufferLike>;
-    n: number;
     /**
      * Convert to a serializable form that has nice stringified hashes and other simplified forms. May be
      * useful for simplified inspection.
@@ -30,14 +29,15 @@ declare class BitcoinOutPoint {
     };
 }
 declare namespace BitcoinOutPoint {
-    let _nativeName: string;
-    let _decodePropertiesDescriptor: {
+    var _nativeName: string;
+    var _decodePropertiesDescriptor: {
         type: string;
         name: string;
     }[];
-    let _encodePropertiesDescriptor: {
+    var _encodePropertiesDescriptor: {
         type: string;
         name: string;
     }[];
 }
+export default BitcoinOutPoint;
 //# sourceMappingURL=OutPoint.d.ts.map

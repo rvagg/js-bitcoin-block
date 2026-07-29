@@ -1,5 +1,4 @@
-export default BitcoinTransactionOut;
-export type TransactionOutPorcelain = import("../interface.js").TransactionOutPorcelain;
+export type TransactionOutPorcelain = import('../interface.js').TransactionOutPorcelain;
 /** @typedef {import('../interface.js').TransactionOutPorcelain} TransactionOutPorcelain */
 /**
  * A class representation of a Bitcoin TransactionOut, multiple of which are contained within each
@@ -10,6 +9,8 @@ export type TransactionOutPorcelain = import("../interface.js").TransactionOutPo
  * @class
  */
 declare class BitcoinTransactionOut {
+    value: number;
+    scriptPubKey: Uint8Array<ArrayBufferLike>;
     /**
      * Instantiate a new `BitcoinTransactionOut`.
      *
@@ -20,8 +21,6 @@ declare class BitcoinTransactionOut {
      * @constructs BitcoinTransactionOut
      */
     constructor(value: bigint | number, scriptPubKey: Uint8Array);
-    value: number;
-    scriptPubKey: Uint8Array<ArrayBufferLike>;
     /**
      * @param {number} [n]
      * @returns {TransactionOutPorcelain}
@@ -43,33 +42,16 @@ declare class BitcoinTransactionOut {
     toPorcelain(): object;
 }
 declare namespace BitcoinTransactionOut {
-    /**
-     * Instantiate a `BitcoinTransactionIn` from porcelain data. This is the inverse of
-     * {@link BitcoinTransactionOut#toPorcelain}.
-     *
-     * This function is normally called from {@link BitcoinTransaction.fromPorcelain} to instantiate the
-     * each element of the `vin` array.
-     *
-     * Fields required to instantiate a transaction are:
-     *
-     * * `value` number - the BTC value of this transaction (not satoshis, which are used in the
-     *   BitcoinTransactionOut).
-     * * `scriptPubKey` object:
-     *   - `scriptPubKey.hex` hex string - the raw scriptPubKey data (the asm isn't used)
-     *
-     * @function
-     * @param {TransactionOutPorcelain} porcelain the porcelain form of a BitcoinTransactionOut
-     * @returns {BitcoinTransactionOut}
-     */
-    function fromPorcelain(porcelain: TransactionOutPorcelain): BitcoinTransactionOut;
-    let _nativeName: string;
-    let _decodePropertiesDescriptor: {
+    var fromPorcelain: (porcelain: TransactionOutPorcelain) => BitcoinTransactionOut;
+    var _nativeName: string;
+    var _decodePropertiesDescriptor: {
         type: string;
         name: string;
     }[];
-    let _encodePropertiesDescriptor: {
+    var _encodePropertiesDescriptor: {
         type: string;
         name: string;
     }[];
 }
+export default BitcoinTransactionOut;
 //# sourceMappingURL=TransactionOut.d.ts.map

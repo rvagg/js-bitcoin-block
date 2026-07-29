@@ -225,7 +225,7 @@ class BitcoinTransaction {
    * It is possible to perform a `decode().encode()` round-trip for any given valid
    * transaction data and produce the same binary output.
    *
-   * @param {HASH_NO_WITNESS} [_noWitness] - any encoding args, currently only
+   * @param {typeof HASH_NO_WITNESS} [_noWitness] - any encoding args, currently only
    * `BitcoinTransaction.HASH_NO_WITNESS` is a valid argument, which when provided will
    * return the transaction encoded _without_ witness data. When encoded without
    * witness data, the resulting binary data can be double SHA2-256 hashed to produce

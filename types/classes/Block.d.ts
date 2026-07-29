@@ -1,7 +1,8 @@
-export default BitcoinBlock;
-export type Encoder = import("../interface.js").Encoder;
-export type BlockPorcelain = import("../interface.js").BlockPorcelain;
-export type BlockHeaderPorcelain = import("../interface.js").BlockHeaderPorcelain;
+import { HASH_NO_WITNESS } from './class-utils.js';
+import BitcoinTransaction from './Transaction.js';
+export type Encoder = import('../interface.js').Encoder;
+export type BlockPorcelain = import('../interface.js').BlockPorcelain;
+export type BlockHeaderPorcelain = import('../interface.js').BlockHeaderPorcelain;
 /** @typedef {import('../interface.js').Encoder} Encoder */
 /** @typedef {import('../interface.js').BlockPorcelain} BlockPorcelain */
 /** @typedef {import('../interface.js').BlockHeaderPorcelain} BlockHeaderPorcelain */
@@ -30,6 +31,19 @@ export type BlockHeaderPorcelain = import("../interface.js").BlockHeaderPorcelai
  * @class
  */
 declare class BitcoinBlock {
+    version: number;
+    previousblockhash: Uint8Array<ArrayBufferLike>;
+    merkleroot: Uint8Array<ArrayBufferLike>;
+    time: number;
+    bits: number;
+    nonce: number;
+    hash: Uint8Array<ArrayBufferLike> | undefined;
+    tx: BitcoinTransaction[] | undefined;
+    size: number | undefined;
+    difficulty: number;
+    strippedsize: number | undefined;
+    weight: number | undefined;
+    _segWit: boolean | undefined;
     /**
      * Instantiate a new `BitcoinBlock`.
      *
@@ -51,24 +65,12 @@ declare class BitcoinBlock {
      * @constructs BitcoinBlock
      */
     constructor(version: number, previousblockhash: Uint8Array, merkleroot: Uint8Array, time: number, bits: number, nonce: number, hash?: Uint8Array, tx?: Array<BitcoinTransaction>, size?: number);
-    version: number;
-    previousblockhash: Uint8Array<ArrayBufferLike>;
-    merkleroot: Uint8Array<ArrayBufferLike>;
-    time: number;
-    bits: number;
-    nonce: number;
-    hash: Uint8Array<ArrayBufferLike> | undefined;
-    tx: BitcoinTransaction[] | undefined;
-    size: number | undefined;
-    difficulty: number;
-    strippedsize: number | undefined;
-    weight: number | undefined;
     /**
      * @param {any} _
      * @param {'min'|'header'|'full'} [type]
      * @returns {BlockPorcelain|BlockHeaderPorcelain}
      */
-    toJSON(_: any, type?: "min" | "header" | "full"): BlockPorcelain | BlockHeaderPorcelain;
+    toJSON(_: any, type?: 'min' | 'header' | 'full'): BlockPorcelain | BlockHeaderPorcelain;
     /**
      * Convert to a serializable form that has nice stringified hashes and other simplified forms. May
      * be useful for simplified inspection.
@@ -85,7 +87,7 @@ declare class BitcoinBlock {
      * @param {'min'|'header'|'full'} [type]
      * @returns {BlockPorcelain|BlockHeaderPorcelain}
      */
-    toPorcelain(type?: "min" | "header" | "full"): BlockPorcelain | BlockHeaderPorcelain;
+    toPorcelain(type?: 'min' | 'header' | 'full'): BlockPorcelain | BlockHeaderPorcelain;
     /**
      * **Calculate** the merkle root of the transactions in this block. This method should reproduce
      * the native `merkleroot` field if this block was decoded from raw block data.
@@ -147,7 +149,6 @@ declare class BitcoinBlock {
      * @returns {boolean}
      */
     isSegWit(): boolean;
-    _segWit: boolean | undefined;
     /**
      * Encode this block into its raw binary form. Assuming you have the complete
      * block data in this instantiated form.
@@ -155,7 +156,7 @@ declare class BitcoinBlock {
      * It is possible to perform a `decode().encode()` round-trip for any given valid
      * block data and produce the same binary output.
      *
-     * @param {HASH_NO_WITNESS} [_noWitness] - any encoding args, currently only
+     * @param {typeof HASH_NO_WITNESS} [_noWitness] - any encoding args, currently only
      * `BitcoinBlock.HASH_NO_WITNESS` is a valid argument, which when provided will
      * return the block with transactions encoded _without_ witness data.
      * @name BitcoinBlock#encode
@@ -166,120 +167,38 @@ declare class BitcoinBlock {
 }
 declare namespace BitcoinBlock {
     export { HASH_NO_WITNESS };
-    /**
-     * Instantiate a `BitcoinBlock` from porcelain data. This is the inverse of
-     * {@link BitcoinBlock#toPorcelain}. It does _not_ require the entirety of the porcelain data as
-     * much of it is either duplicate data or derivable from other fields.
-     *
-     * If a full `tx` array is provided on the porcelain object {@link BitcoinTransaction.fromPorcelain}
-     * is called on each of these in turn to re-instantiate the native transaction array.
-     *
-     * Fields required to instantiate a basic header form are:
-     *
-     * * `previousblockhash` _if_ the block is not the genesis block (its absence assumes this)
-     * * `version` integer
-     * * `merkleroot` 64-character hex string
-     * *  `time` integer
-     * * `bits` hex string
-     *
-     * A `tx` array indicates that full block data is present and it should attempt to decode the entire
-     * structure.
-     *
-     * @param {BlockPorcelain | BlockHeaderPorcelain} porcelain the porcelain form of a Bitcoin block
-     * @returns {BitcoinBlock}
-     * @function
-     */
-    export function fromPorcelain(porcelain: BlockPorcelain | BlockHeaderPorcelain): BitcoinBlock;
-    export let _nativeName: string;
-    export let _decodePropertiesDescriptor: {
+    export var fromPorcelain: (porcelain: BlockPorcelain | BlockHeaderPorcelain) => BitcoinBlock;
+    export var _nativeName: string;
+    export var _decodePropertiesDescriptor: {
         type: string;
         name: string;
     }[];
-    export let _encodePropertiesDescriptor: {
+    export var _encodePropertiesDescriptor: {
         type: string;
         name: string;
     }[];
-    /**
-     * @param {*} decoder
-     * @param {Record<string, any>} _
-     * @param {Record<string, any>} state
-     */
-    export function _customDecoderMarkStart(decoder: any, _: Record<string, any>, state: Record<string, any>): void;
-    /**
-     * @param {*} decoder
-     * @param {Record<string, any>} properties
-     * @param {Record<string, any>} state
-     */
-    export function _customDecodeHash(decoder: any, properties: Record<string, any>, state: Record<string, any>): void;
-    /**
-     * @param {*} decoder
-     * @param {Record<string, any>} properties
-     * @param {Record<string, any>} state
-     */
-    export function _customDecodeSize(decoder: any, properties: Record<string, any>, state: Record<string, any>): void;
-    /**
-     * @param {BitcoinBlock} block
-     * @param {Encoder} encoder
-     * @param {any[]} args
-     */
-    export function _customEncodeTransactions(block: BitcoinBlock, encoder: Encoder, args: any[]): Generator<Uint8Array<ArrayBufferLike>, void, unknown>;
-    /**
-     * Decode a {@link BitcoinBlock} from the raw bytes of the block. Such data
-     * in hex form is available directly from the bitcoin cli:
-     * `bitcoin-cli getblock <hash> 0` (where `0` requests hex form).
-     *
-     * Use this if you have the full block hash, otherwise use {@link BitcoinBlock.decodeBlockHeaderOnly}
-     * to parse just the 80-byte header data.
-     *
-     * @param {Uint8Array} _bytes - the raw bytes of the block to be decoded.
-     * @param {boolean} [_strictLengthUsage] - ensure that all bytes were consumed during decode.
-     * This is useful when ensuring that bytes have been properly decoded where there is
-     * uncertainty about whether the bytes represent a Block or not. Switch to `true` to be
-     * sure.
-     * @name BitcoinBlock.decode
-     * @function
-     * @returns {BitcoinBlock}
-     */
-    export function decode(_bytes: Uint8Array, _strictLengthUsage?: boolean): BitcoinBlock;
-    /**
-     * Decode only the header section of a {@link BitcoinBlock} from the raw bytes of the block.
-     * This method will exclude the transactions but will properly present the header
-     * data including the correct hash.
-     *
-     * To decode the entire block data, use {@link BitcoinBlock.decodeBlock}.
-     *
-     * This method returns a `BitcoinBlockHeaderOnly` which is a subclass of
-     * `BitcoinBlock` and may be used as such. Just don't expect it to give you
-     * any transaction data beyond the merkle root.
-     *
-     * @param {Uint8Array} _bytes - the raw bytes of the block to be decoded.
-     * @param {boolean} [_strictLengthUsage]
-     * @name BitcoinBlock.decodeBlockHeaderOnly
-     * @function
-     * @returns {BitcoinBlock}
-     */
-    export function decodeHeaderOnly(_bytes: Uint8Array, _strictLengthUsage?: boolean): BitcoinBlock;
+    export var _customDecoderMarkStart: (decoder: any, _: Record<string, any>, state: Record<string, any>) => void;
+    export var _customDecodeHash: (decoder: any, properties: Record<string, any>, state: Record<string, any>) => void;
+    export var _customDecodeSize: (decoder: any, properties: Record<string, any>, state: Record<string, any>) => void;
+    export var _customEncodeTransactions: (block: BitcoinBlock, encoder: Encoder, args: any[]) => Generator<Uint8Array<ArrayBufferLike>, void, unknown>;
+    export var decode: (_bytes: Uint8Array, _strictLengthUsage?: boolean) => BitcoinBlock;
+    export var decodeHeaderOnly: (_bytes: Uint8Array, _strictLengthUsage?: boolean) => BitcoinBlock;
 }
-export class BitcoinBlockHeaderOnly extends BitcoinBlock {
+declare class BitcoinBlockHeaderOnly extends BitcoinBlock {
 }
-export namespace BitcoinBlockHeaderOnly {
-    let _nativeName_1: string;
-    export { _nativeName_1 as _nativeName };
-    let _decodePropertiesDescriptor_1: {
+declare namespace BitcoinBlockHeaderOnly {
+    var _nativeName: string;
+    var _decodePropertiesDescriptor: {
         type: string;
         name: string;
     }[];
-    export { _decodePropertiesDescriptor_1 as _decodePropertiesDescriptor };
-    import _customDecoderMarkStart = BitcoinBlock._customDecoderMarkStart;
-    export { _customDecoderMarkStart };
-    import _customDecodeHash = BitcoinBlock._customDecodeHash;
-    export { _customDecodeHash };
-    let _encodePropertiesDescriptor_1: {
+    var _customDecoderMarkStart: (decoder: any, _: Record<string, any>, state: Record<string, any>) => void;
+    var _customDecodeHash: (decoder: any, properties: Record<string, any>, state: Record<string, any>) => void;
+    var _encodePropertiesDescriptor: {
         type: string;
         name: string;
     }[];
-    export { _encodePropertiesDescriptor_1 as _encodePropertiesDescriptor };
 }
-import BitcoinTransaction from './Transaction.js';
-import { HASH_NO_WITNESS } from './class-utils.js';
+export default BitcoinBlock;
+export { BitcoinBlockHeaderOnly };
 //# sourceMappingURL=Block.d.ts.map
