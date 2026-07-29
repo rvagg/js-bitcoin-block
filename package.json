@@ -1,6 +1,6 @@
 {
   "name": "bitcoin-block",
-  "version": "3.0.10",
+  "version": "3.0.11",
   "description": "A Bitcoin block interface and decoder for JavaScript",
   "type": "module",
   "main": "bitcoin-block.js",
