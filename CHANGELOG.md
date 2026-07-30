@@ -1,3 +1,9 @@
+## [3.0.12](https://github.com/rvagg/js-bitcoin-block/compare/v3.0.11...v3.0.12) (2026-07-30)
+
+### Trivial Changes
+
+* downgrade broken changelog maker, backfill entries ([#55](https://github.com/rvagg/js-bitcoin-block/issues/55)) ([0847776](https://github.com/rvagg/js-bitcoin-block/commit/08477764b34872c839ec191d383ab5f206166aee))
+
 ## [3.0.11](https://github.com/rvagg/js-bitcoin-block/compare/v3.0.10...v3.0.11) (2026-07-29)
 
 ### Trivial Changes
