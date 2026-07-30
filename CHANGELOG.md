@@ -1,10 +1,27 @@
 ## [3.0.11](https://github.com/rvagg/js-bitcoin-block/compare/v3.0.10...v3.0.11) (2026-07-29)
 
+### Trivial Changes
+
+* **deps-dev:** bump typescript from 6.0.3 to 7.0.2 ([3cbb1dd](https://github.com/rvagg/js-bitcoin-block/commit/3cbb1dd490f1d641af7d88dc005ab14ae14a596e))
+* fixes for ts@7 ([8bc0808](https://github.com/rvagg/js-bitcoin-block/commit/8bc0808ab8bc9d9cb39e97f83b50b0cbefc4cb40))
+
 ## [3.0.10](https://github.com/rvagg/js-bitcoin-block/compare/v3.0.9...v3.0.10) (2026-07-27)
+
+### Trivial Changes
+
+* **deps:** bump the github-actions-minor-patch group with 2 updates ([#54](https://github.com/rvagg/js-bitcoin-block/issues/54)) ([89dfc33](https://github.com/rvagg/js-bitcoin-block/commit/89dfc333428a2667504489c9b49995d9cc96d957))
 
 ## [3.0.9](https://github.com/rvagg/js-bitcoin-block/compare/v3.0.8...v3.0.9) (2026-07-21)
 
+### Trivial Changes
+
+* **ci:** slow down dependabot, add depsound, pin actions by hash ([#53](https://github.com/rvagg/js-bitcoin-block/issues/53)) ([78c331d](https://github.com/rvagg/js-bitcoin-block/commit/78c331d24fd95271f1a6ca62e247c4a605d7d15a))
+
 ## [3.0.8](https://github.com/rvagg/js-bitcoin-block/compare/v3.0.7...v3.0.8) (2026-07-03)
+
+### Trivial Changes
+
+* **deps-dev:** bump conventional-changelog-conventionalcommits ([#50](https://github.com/rvagg/js-bitcoin-block/issues/50)) ([19c2ab6](https://github.com/rvagg/js-bitcoin-block/commit/19c2ab652d7fa8470f8f8259c5db8aadb2ab1df2))
 
 ## [3.0.7](https://github.com/rvagg/js-bitcoin-block/compare/v3.0.6...v3.0.7) (2026-07-01)
 
