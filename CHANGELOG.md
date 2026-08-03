@@ -1,3 +1,9 @@
+## [3.0.15](https://github.com/rvagg/js-bitcoin-block/compare/v3.0.14...v3.0.15) (2026-08-03)
+
+### Trivial Changes
+
+* **deps-dev:** bump @semantic-release/git from 10.0.1 to 11.0.1 ([#59](https://github.com/rvagg/js-bitcoin-block/issues/59)) ([6d5f335](https://github.com/rvagg/js-bitcoin-block/commit/6d5f335d7d52c82ae16bf38c3a70f8615e25cc7a))
+
 ## [3.0.14](https://github.com/rvagg/js-bitcoin-block/compare/v3.0.13...v3.0.14) (2026-08-03)
 
 ### Trivial Changes
