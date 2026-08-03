@@ -1,3 +1,9 @@
+## [3.0.14](https://github.com/rvagg/js-bitcoin-block/compare/v3.0.13...v3.0.14) (2026-08-03)
+
+### Trivial Changes
+
+* **deps-dev:** bump @semantic-release/changelog from 6.0.3 to 7.0.0 ([#58](https://github.com/rvagg/js-bitcoin-block/issues/58)) ([64203fb](https://github.com/rvagg/js-bitcoin-block/commit/64203fbfa3b6786a6a1a6fc80b1827d126354a4c))
+
 ## [3.0.13](https://github.com/rvagg/js-bitcoin-block/compare/v3.0.12...v3.0.13) (2026-08-03)
 
 ### Trivial Changes
