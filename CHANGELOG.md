@@ -1,3 +1,9 @@
+## [3.0.13](https://github.com/rvagg/js-bitcoin-block/compare/v3.0.12...v3.0.13) (2026-08-03)
+
+### Trivial Changes
+
+* **deps:** bump the github-actions-minor-patch group with 2 updates ([#56](https://github.com/rvagg/js-bitcoin-block/issues/56)) ([8525728](https://github.com/rvagg/js-bitcoin-block/commit/85257281cc7ffcf28f865ae967dfcb0b8a93e789))
+
 ## [3.0.12](https://github.com/rvagg/js-bitcoin-block/compare/v3.0.11...v3.0.12) (2026-07-30)
 
 ### Trivial Changes
