@@ -1,3 +1,9 @@
+## [3.0.17](https://github.com/rvagg/js-bitcoin-block/compare/v3.0.16...v3.0.17) (2026-10-19)
+
+### Trivial Changes
+
+* **deps-dev:** bump mocha from 11.8.0 to 12.0.2 ([#62](https://github.com/rvagg/js-bitcoin-block/issues/62)) ([0e12e98](https://github.com/rvagg/js-bitcoin-block/commit/0e12e9889bc874becb3d76520aff7df44f181494))
+
 ## [3.0.16](https://github.com/rvagg/js-bitcoin-block/compare/v3.0.15...v3.0.16) (2026-10-19)
 
 ### Trivial Changes
