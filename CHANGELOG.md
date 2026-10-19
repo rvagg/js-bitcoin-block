@@ -1,3 +1,9 @@
+## [3.0.16](https://github.com/rvagg/js-bitcoin-block/compare/v3.0.15...v3.0.16) (2026-10-19)
+
+### Trivial Changes
+
+* **deps:** bump actions/setup-node ([#63](https://github.com/rvagg/js-bitcoin-block/issues/63)) ([72b5dc7](https://github.com/rvagg/js-bitcoin-block/commit/72b5dc70398b728ab78eee7562f881209dfc1599))
+
 ## [3.0.15](https://github.com/rvagg/js-bitcoin-block/compare/v3.0.14...v3.0.15) (2026-08-03)
 
 ### Trivial Changes
